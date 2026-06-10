@@ -107,10 +107,26 @@ static func make_dialogue(id: String, start_node_id: String, nodes: Array) -> Na
 	return dialogue
 
 
+static func make_loc_table() -> NarrativeLocalizationTable:
+	var table := NarrativeLocalizationTable.new()
+	table.id = "main"
+	table.set_text("greet.key", "en", "Hello")
+	table.set_text("greet.key", "ko", "안녕하세요")
+	table.set_text("dlg.linear.n1.text", "ko", "첫 번째")  # convention key, ko only
+	table.set_text("quest.rats.title", "ko", "쥐 사냥")
+	table.set_text("char.guard.name", "ko", "경비병")
+	table.set_text("ui.quest_log.title", "ko", "퀘스트")
+	table.set_text("ui.alert.reward", "en", "Reward!")
+	table.set_text("ui.alert.reward", "ko", "보상!")
+	table.set_text("only.korean", "ko", "한국어만")
+	return table
+
+
 ## A database covering every runner/evaluator scenario the unit tests need.
 ## Variables: gold(int,10), met_guard(bool,false), hero_name(string,"Hero").
 static func standard() -> NarrativeDatabase:
 	var db := NarrativeDatabase.new()
+	db.localization_tables = [make_loc_table()]
 	db.characters = [make_character("guard", "Guard"), make_character("player", "Player")]
 	db.variables = [
 		make_int_var("gold", 10),
@@ -177,6 +193,11 @@ static func standard() -> NarrativeDatabase:
 		make_dialogue("actions", "a1", [
 			make_node("a1", {"actions": "gold += 5\nmet_guard = true", "next": "a2", "text": "paid"}),
 			make_node("a2", {"text": "done"}),
+		]),
+		# loctest: explicit localization keys (existing + missing)
+		make_dialogue("loctest", "L1", [
+			make_node("L1", {"key": "greet.key", "text": "RAW greet", "next": "L2"}),
+			make_node("L2", {"key": "missing.key", "text": "fallback line"}),
 		]),
 		# questgiver: starts/completes quests from dialogue actions
 		make_dialogue("questgiver", "g1", [
