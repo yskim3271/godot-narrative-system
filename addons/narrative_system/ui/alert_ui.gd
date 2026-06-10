@@ -24,11 +24,18 @@ func _ready() -> void:
 
 
 func setup(api: Object) -> void:
-	if _api != null:
-		push_warning("AlertUI: already bound — rebinding is not supported")
+	if _api == api:
 		return
+	_unbind()
 	_api = api
 	api.alert_requested.connect(enqueue)
+
+
+func _unbind() -> void:
+	if _api == null:
+		return
+	_api.alert_requested.disconnect(enqueue)
+	_api = null
 
 
 ## Queues an alert text (already localized by the facade/context).

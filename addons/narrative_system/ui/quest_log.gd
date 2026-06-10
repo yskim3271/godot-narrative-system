@@ -26,17 +26,25 @@ func _ready() -> void:
 
 
 func setup(api: Object) -> void:
-	if _api != null:
-		push_warning("QuestLog: already bound — rebinding is not supported")
+	if _api == api:
 		return
+	_unbind()
 	_api = api
 	api.quest_updated.connect(_on_changed)
 	api.language_changed.connect(_on_changed)
 
 
+func _unbind() -> void:
+	if _api == null:
+		return
+	_api.quest_updated.disconnect(_on_changed)
+	_api.language_changed.disconnect(_on_changed)
+	_api = null
+
+
 func toggle() -> void:
 	visible = not visible
-	if visible:
+	if visible and _api != null and (not _api.has_method("is_ready") or _api.is_ready()):
 		_refresh_now()
 
 

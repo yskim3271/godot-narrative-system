@@ -35,11 +35,12 @@ func _ready() -> void:
 
 
 ## Binds this UI to a runner-like API (signals + advance()/select_choice()/
-## get_character()/...). Call once; for tests pass context.runner.
+## get_character()/...). Rebinding replaces the previous binding (e.g. a
+## test rebinding away from a not-yet-configured autoload).
 func setup(api: Object) -> void:
-	if _api != null:
-		push_warning("DialogueBox: already bound — rebinding is not supported")
+	if _api == api:
 		return
+	_unbind()
 	_api = api
 	api.line_presented.connect(_on_line_presented)
 	api.choices_presented.connect(_on_choices_presented)
@@ -47,11 +48,26 @@ func setup(api: Object) -> void:
 	api.dialogue_ended.connect(_on_dialogue_ended)
 	api.expression_changed.connect(_on_expression_changed)
 	# Late attach while a dialogue is already running: pull the state once.
-	if api.is_dialogue_running():
+	if _api_ready() and api.is_dialogue_running():
 		var node: NarrativeDialogueNode = api.get_current_node()
 		if node != null:
 			_on_line_presented(node.speaker_id, api.get_current_line_text())
 			_awaiting_choices = api.is_waiting_for_choice()
+
+
+func _unbind() -> void:
+	if _api == null:
+		return
+	_api.line_presented.disconnect(_on_line_presented)
+	_api.choices_presented.disconnect(_on_choices_presented)
+	_api.choice_selected.disconnect(_on_choice_selected)
+	_api.dialogue_ended.disconnect(_on_dialogue_ended)
+	_api.expression_changed.disconnect(_on_expression_changed)
+	_api = null
+
+
+func _api_ready() -> bool:
+	return not _api.has_method("is_ready") or _api.is_ready()
 
 
 func _unhandled_input(event: InputEvent) -> void:

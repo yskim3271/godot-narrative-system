@@ -17,13 +17,24 @@ func _ready() -> void:
 
 
 func setup(api: Object) -> void:
-	if _api != null:
-		push_warning("QuestTracker: already bound — rebinding is not supported")
+	if _api == api:
 		return
+	_unbind()
 	_api = api
 	api.quest_updated.connect(_on_changed)
 	api.language_changed.connect(_on_changed)
-	_refresh_now()
+	if not _api.has_method("is_ready") or _api.is_ready():
+		_refresh_now()
+	else:
+		visible = false
+
+
+func _unbind() -> void:
+	if _api == null:
+		return
+	_api.quest_updated.disconnect(_on_changed)
+	_api.language_changed.disconnect(_on_changed)
+	_api = null
 
 
 func _on_changed(_arg: Variant = null) -> void:

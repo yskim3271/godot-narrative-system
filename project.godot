@@ -11,6 +11,10 @@ config/description="All-in-one narrative system addon for Godot 4: branching dia
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/narrative_system/plugin.cfg")
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

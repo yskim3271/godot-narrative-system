@@ -20,17 +20,30 @@ func _ready() -> void:
 			setup(autoload)
 
 
-## Binds to a runner-like API. Call once; for tests pass context.runner.
+## Binds to a runner-like API. Rebinding replaces the previous binding.
 func setup(api: Object) -> void:
-	if _api != null:
-		push_warning("ChoiceList: already bound — rebinding is not supported")
+	if _api == api:
 		return
+	_unbind()
 	_api = api
 	api.choices_presented.connect(_on_choices_presented)
 	api.choice_selected.connect(_on_choice_selected)
 	api.dialogue_ended.connect(_on_dialogue_ended)
-	if api.is_waiting_for_choice():
+	if _api_ready() and api.is_waiting_for_choice():
 		_on_choices_presented(api.get_available_choices())
+
+
+func _unbind() -> void:
+	if _api == null:
+		return
+	_api.choices_presented.disconnect(_on_choices_presented)
+	_api.choice_selected.disconnect(_on_choice_selected)
+	_api.dialogue_ended.disconnect(_on_dialogue_ended)
+	_api = null
+
+
+func _api_ready() -> bool:
+	return not _api.has_method("is_ready") or _api.is_ready()
 
 
 func _on_choices_presented(choices: Array) -> void:

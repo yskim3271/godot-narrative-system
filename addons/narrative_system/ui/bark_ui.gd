@@ -20,11 +20,18 @@ func _ready() -> void:
 
 
 func setup(api: Object) -> void:
-	if _api != null:
-		push_warning("BarkUI: already bound — rebinding is not supported")
+	if _api == api:
 		return
+	_unbind()
 	_api = api
 	api.bark_requested.connect(_on_bark)
+
+
+func _unbind() -> void:
+	if _api == null:
+		return
+	_api.bark_requested.disconnect(_on_bark)
+	_api = null
 
 
 func _on_bark(_character_id: String, text: String, attach_to: Node) -> void:

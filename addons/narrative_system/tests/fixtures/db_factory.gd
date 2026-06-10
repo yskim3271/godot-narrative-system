@@ -218,6 +218,30 @@ static func standard() -> NarrativeDatabase:
 	return db
 
 
+## A small database that must validate with ZERO issues (errors or warnings).
+static func clean() -> NarrativeDatabase:
+	var db := NarrativeDatabase.new()
+	db.characters = [make_character("guard", "Guard")]
+	db.variables = [make_int_var("gold", 10), make_bool_var("met_guard", false)]
+	var table := NarrativeLocalizationTable.new()
+	table.set_text("dlg.hello.h1.text", "ko", "안녕")
+	db.localization_tables = [table]
+	db.quests = [
+		make_quest("intro", {"title": "Intro", "rewards": "gold += 5"}),
+	]
+	db.dialogues = [
+		make_dialogue("hello", "h1", [
+			make_node("h1", {"text": "hi", "conditions": "gold >= 0", "actions": "met_guard = true", "seq": "wait(0.1)", "next": "h2"}),
+			make_node("h2", {"text": "pick", "choices": [
+				make_choice("more", {"target": "h3", "actions": "start_quest(\"intro\")"}),
+				make_choice("bye", {}),
+			]}),
+			make_node("h3", {"text": "extra"}),
+		]),
+	]
+	return db
+
+
 static func _chain_nodes(count: int) -> Array:
 	var nodes: Array = []
 	for i in range(1, count + 1):

@@ -28,6 +28,12 @@ const SETTING_DATABASE_PATH := "narrative_system/database_path"
 var context: NarrativeContext
 
 
+## True once a database is loaded. UIs use this to skip initial state pulls
+## when auto-binding to a not-yet-configured autoload.
+func is_ready() -> bool:
+	return context != null
+
+
 func _ready() -> void:
 	var path := str(ProjectSettings.get_setting(SETTING_DATABASE_PATH, ""))
 	if path == "":
