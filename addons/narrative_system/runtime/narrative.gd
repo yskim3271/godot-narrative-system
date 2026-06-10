@@ -132,6 +132,28 @@ func set_variable(variable_id: String, value: Variant) -> bool:
 	return true
 
 
+# --- save / load ---
+
+
+## Saves the whole narrative state to user://saves/<slot>.json.
+## Returns OK, or ERR_BUSY when called from inside a dialogue transition.
+func save_game(slot := "save") -> Error:
+	return context.save_manager.save_game(slot) if _ok() else ERR_UNCONFIGURED
+
+
+## Loads a slot, restores state and resumes the saved dialogue position.
+func load_game(slot := "save") -> Error:
+	return context.save_manager.load_game(slot) if _ok() else ERR_UNCONFIGURED
+
+
+func has_save(slot := "save") -> bool:
+	return context != null and context.save_manager.has_save(slot)
+
+
+func delete_save(slot := "save") -> bool:
+	return context != null and context.save_manager.delete_save(slot)
+
+
 # --- DSL extension ---
 
 

@@ -116,6 +116,7 @@ static func standard() -> NarrativeDatabase:
 		make_int_var("gold", 10),
 		make_bool_var("met_guard", false),
 		make_string_var("hero_name", "Hero"),
+		make_int_var("session_tmp", 7, false),  # persistent = false: excluded from saves
 	]
 	db.quests = [
 		make_quest("rats", {

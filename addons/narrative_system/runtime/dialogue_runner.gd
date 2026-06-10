@@ -201,6 +201,45 @@ func notify_expression(character_id: String, expression: String) -> void:
 	expression_changed.emit(character_id, expression)
 
 
+## Re-presents the dialogue position stored in NarrativeState.current_dialogue
+## (set by the SaveManager). PRESENTATION ONLY: node actions and sequencer
+## commands are not re-run (their effects are already in the restored state),
+## and the node is not re-added to seen/history. Choice conditions are
+## re-evaluated against the restored variables. Returns true when resumed;
+## a missing dialogue/node drops the saved position with a warning.
+func try_resume() -> bool:
+	if _phase != Phase.IDLE:
+		push_error("Narrative: try_resume() called while a dialogue is running")
+		return false
+	var current: Dictionary = _state.current_dialogue
+	if current.is_empty():
+		return false
+	var dialogue_id := str(current.get("dialogue_id", ""))
+	var node_id := str(current.get("node_id", ""))
+	var dialogue := _database.get_dialogue(dialogue_id)
+	if dialogue == null or not dialogue.has_node_id(node_id):
+		push_warning("Narrative: saved dialogue position '%s/%s' no longer exists in the database — dropping it" % [dialogue_id, node_id])
+		_state.current_dialogue = {}
+		return false
+	_busy = true
+	_dialogue = dialogue
+	_node = dialogue.get_node_by_id(node_id)
+	_visible = _build_visible_choices(_node)
+	if _visible.is_empty():
+		_phase = Phase.AT_LINE
+		_state.current_dialogue.phase = "at_line"
+	else:
+		_phase = Phase.AT_CHOICES
+		_state.current_dialogue.phase = "at_choices"
+	dialogue_resumed.emit(dialogue_id, node_id)
+	line_presented.emit(_node.speaker_id, _resolve_node_text(_node))
+	if _phase == Phase.AT_CHOICES:
+		choices_presented.emit(get_available_choices())
+	_drain()
+	_busy = false
+	return true
+
+
 # --- internals ---
 
 

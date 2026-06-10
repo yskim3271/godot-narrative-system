@@ -25,7 +25,7 @@ var runner: NarrativeDialogueRunner
 ## let this instance be freed (measured on 4.6.3 — calls turn invalid).
 var builtins: RefCounted
 var quests: NarrativeQuestManager
-var save_manager = null  # NarrativeSaveManager (Phase 4)
+var save_manager: NarrativeSaveManager
 var sequencer = null     # NarrativeSequencer (Phase 6)
 var scene_tree: SceneTree
 
@@ -65,6 +65,9 @@ static func create(db: NarrativeDatabase, tree: SceneTree = null) -> NarrativeCo
 		var live_runner: NarrativeDialogueRunner = runner_ref.get_ref()
 		if live_runner != null:
 			live_runner.on_language_changed(locale))
+
+	ctx.save_manager = NarrativeSaveManager.new()
+	ctx.save_manager.setup(db, ctx.state, ctx.localization, ctx.runner)
 
 	ctx.builtins = BuiltinFunctions.new()
 	ctx.builtins.install(ctx)
