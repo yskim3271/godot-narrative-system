@@ -21,6 +21,7 @@ signal quest_updated(quest_id: String)
 signal language_changed(locale: String)
 signal alert_requested(text: String)
 signal bark_requested(character_id: String, text: String, attach_to: Node)
+signal sequence_event(event_name: String, args: Array)
 
 const SETTING_DATABASE_PATH := "narrative_system/database_path"
 
@@ -163,6 +164,17 @@ func register_function(name: String, callable: Callable, override := false) -> b
 	return context.evaluator.functions.register(name, callable, override) if _ok() else false
 
 
+## Registers a custom sequencer command: callable(args: Array), may await.
+func register_sequencer_command(name: String, handler: Callable, override := false) -> bool:
+	return context.sequencer.register_command(name, handler, override) if _ok() else false
+
+
+## Plays a sequencer command string directly (outside any dialogue node).
+func play_sequence(source: String, label := "api") -> void:
+	if _ok():
+		context.sequencer.start_run(source, label)
+
+
 # --- localization ---
 
 
@@ -300,5 +312,6 @@ func _wire(ctx: NarrativeContext) -> void:
 	ctx.localization.language_changed.connect(func(locale: String) -> void: language_changed.emit(locale))
 	ctx.alert_requested.connect(func(text: String) -> void: alert_requested.emit(text))
 	ctx.bark_requested.connect(func(c: String, t: String, n: Node) -> void: bark_requested.emit(c, t, n))
+	ctx.sequencer.sequence_event.connect(func(event_name: String, args: Array) -> void: sequence_event.emit(event_name, args))
 	if ctx.quests != null:
 		ctx.quests.quest_updated.connect(func(id: String) -> void: quest_updated.emit(id))

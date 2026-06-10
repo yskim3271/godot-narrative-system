@@ -85,6 +85,11 @@ func _run_script(script_path: String) -> void:
 		await case.after_each()
 		_total += 1
 		var failures: Array = case._failures
+		if failures.is_empty() and case.assert_count == 0:
+			# A GDScript error aborts the test coroutine without any signal;
+			# zero executed assertions is the reliable tell. Never report
+			# an aborted test as PASS.
+			failures.append("[%s] finished with 0 assertions — aborted by a script error? (every test must assert at least once)" % method_name)
 		if failures.is_empty():
 			_passed += 1
 			print("  PASS  %s" % method_name)

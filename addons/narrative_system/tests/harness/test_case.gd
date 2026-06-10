@@ -10,6 +10,11 @@ extends RefCounted
 var scene_tree: SceneTree
 var current_test := ""
 var _failures: Array[String] = []
+## Number of assertions executed. The runner FAILS tests that finish with
+## zero assertions: a GDScript error aborts the test coroutine silently, so
+## "no assertions ran" is the reliable tell for an aborted test. Every test
+## must therefore assert at least once.
+var assert_count := 0
 
 # Overridable hooks (run on the same instance as the test method).
 func before_each() -> void:
@@ -21,45 +26,54 @@ func after_each() -> void:
 
 
 func fail(message: String) -> void:
+	assert_count += 1
 	_failures.append("[%s] %s" % [current_test, message])
 
 
 func assert_true(condition: bool, message := "") -> void:
+	assert_count += 1
 	if not condition:
 		fail(_compose("expected true, got false", message))
 
 
 func assert_false(condition: bool, message := "") -> void:
+	assert_count += 1
 	if condition:
 		fail(_compose("expected false, got true", message))
 
 
 func assert_eq(actual: Variant, expected: Variant, message := "") -> void:
+	assert_count += 1
 	if not _values_equal(actual, expected):
 		fail(_compose("expected %s, got %s" % [_repr(expected), _repr(actual)], message))
 
 
 func assert_ne(actual: Variant, not_expected: Variant, message := "") -> void:
+	assert_count += 1
 	if _values_equal(actual, not_expected):
 		fail(_compose("expected anything but %s" % _repr(not_expected), message))
 
 
 func assert_almost_eq(actual: float, expected: float, tolerance := 0.0001, message := "") -> void:
+	assert_count += 1
 	if absf(actual - expected) > tolerance:
 		fail(_compose("expected %s ± %s, got %s" % [expected, tolerance, actual], message))
 
 
 func assert_null(value: Variant, message := "") -> void:
+	assert_count += 1
 	if value != null:
 		fail(_compose("expected null, got %s" % _repr(value), message))
 
 
 func assert_not_null(value: Variant, message := "") -> void:
+	assert_count += 1
 	if value == null:
 		fail(_compose("expected non-null value", message))
 
 
 func assert_contains(collection: Variant, item: Variant, message := "") -> void:
+	assert_count += 1
 	var found := false
 	match typeof(collection):
 		TYPE_STRING:
@@ -101,9 +115,11 @@ func wait_frame() -> void:
 
 func _values_equal(a: Variant, b: Variant) -> bool:
 	# Exact comparison, but treat int/float pairs numerically (3 == 3.0)
-	# to mirror common expectations in assertions.
+	# and String/StringName pairs textually (Godot APIs mix the two).
 	if typeof(a) in [TYPE_INT, TYPE_FLOAT] and typeof(b) in [TYPE_INT, TYPE_FLOAT]:
 		return float(a) == float(b) and (typeof(a) == typeof(b) or float(a) == floorf(float(a)))
+	if typeof(a) in [TYPE_STRING, TYPE_STRING_NAME] and typeof(b) in [TYPE_STRING, TYPE_STRING_NAME]:
+		return str(a) == str(b)
 	return typeof(a) == typeof(b) and a == b
 
 

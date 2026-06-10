@@ -194,6 +194,11 @@ static func standard() -> NarrativeDatabase:
 			make_node("a1", {"actions": "gold += 5\nmet_guard = true", "next": "a2", "text": "paid"}),
 			make_node("a2", {"text": "done"}),
 		]),
+		# seqtest: sequencer run that gets cancelled by advance()
+		make_dialogue("seqtest", "s1", [
+			make_node("s1", {"seq": "wait(0.3)\nset_variable(\"gold\", 99)", "next": "s2", "text": "watch this"}),
+			make_node("s2", {"text": "interrupted"}),
+		]),
 		# loctest: explicit localization keys (existing + missing)
 		make_dialogue("loctest", "L1", [
 			make_node("L1", {"key": "greet.key", "text": "RAW greet", "next": "L2"}),

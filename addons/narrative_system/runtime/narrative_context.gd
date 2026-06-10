@@ -13,6 +13,7 @@ signal bark_requested(character_id: String, text: String, attach_to: Node)
 
 const Evaluator := preload("dsl/evaluator.gd")
 const BuiltinFunctions := preload("dsl/builtin_functions.gd")
+const BuiltinCommands := preload("builtin_commands.gd")
 
 var database: NarrativeDatabase
 var settings: NarrativeSettings
@@ -26,7 +27,10 @@ var runner: NarrativeDialogueRunner
 var builtins: RefCounted
 var quests: NarrativeQuestManager
 var save_manager: NarrativeSaveManager
-var sequencer = null     # NarrativeSequencer (Phase 6)
+var sequencer: NarrativeSequencer
+## Keeps the builtin sequencer-command provider alive (same weak-Callable
+## lifetime rule as `builtins`).
+var builtin_commands: RefCounted
 var scene_tree: SceneTree
 
 ## actor id -> Node, populated by NarrativeActor nodes (Phase 6).
@@ -69,8 +73,14 @@ static func create(db: NarrativeDatabase, tree: SceneTree = null) -> NarrativeCo
 	ctx.save_manager = NarrativeSaveManager.new()
 	ctx.save_manager.setup(db, ctx.state, ctx.localization, ctx.runner)
 
+	ctx.sequencer = NarrativeSequencer.new()
+	ctx.sequencer.setup(ctx.evaluator)
+	ctx.runner.set_sequencer(ctx.sequencer)
+
 	ctx.builtins = BuiltinFunctions.new()
 	ctx.builtins.install(ctx)
+	ctx.builtin_commands = BuiltinCommands.new()
+	ctx.builtin_commands.install(ctx)
 	return ctx
 
 
