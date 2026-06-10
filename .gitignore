@@ -1,0 +1,8 @@
+# Godot 4 generated files
+.godot/
+
+# Temporary / OS files
+*.tmp
+*.bak
+Thumbs.db
+desktop.ini
