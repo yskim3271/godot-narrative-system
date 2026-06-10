@@ -76,6 +76,12 @@ func resolve(explicit_key: String, convention_key: String, inline_text: String) 
 	return inline_text
 
 
+## Lookup with a code-side fallback, for UI chrome strings ("ui.*" keys).
+func text_or(key: String, fallback: String) -> String:
+	var localized := lookup(key)
+	return localized if localized != "" else fallback
+
+
 ## For APIs that accept "either a key or literal text" (alerts, barks):
 ## returns the localized text when the input is a known key, else the input.
 func resolve_text_or_key(text_or_key: String) -> String:

@@ -66,6 +66,35 @@ static func make_choice(id: String, opts := {}) -> NarrativeChoice:
 	return choice
 
 
+static func make_objective(id: String, target: int, description := "", initial := 0) -> NarrativeQuestObjective:
+	var objective := NarrativeQuestObjective.new()
+	objective.id = id
+	objective.description = description if description != "" else "objective %s" % id
+	objective.target_count = target
+	objective.initial_count = initial
+	return objective
+
+
+## opts: title, description, objectives (Array), prerequisites (Array),
+## rewards, auto_track
+static func make_quest(id: String, opts := {}) -> NarrativeQuest:
+	var quest := NarrativeQuest.new()
+	quest.id = id
+	quest.title = opts.get("title", "Quest %s" % id)
+	quest.description = opts.get("description", "")
+	var objectives: Array[NarrativeQuestObjective] = []
+	for objective in opts.get("objectives", []):
+		objectives.append(objective)
+	quest.objectives = objectives
+	var prerequisites := PackedStringArray()
+	for prerequisite in opts.get("prerequisites", []):
+		prerequisites.append(prerequisite)
+	quest.prerequisites = prerequisites
+	quest.rewards = opts.get("rewards", "")
+	quest.auto_track = opts.get("auto_track", true)
+	return quest
+
+
 static func make_dialogue(id: String, start_node_id: String, nodes: Array) -> NarrativeDialogue:
 	var dialogue := NarrativeDialogue.new()
 	dialogue.id = id
@@ -87,6 +116,19 @@ static func standard() -> NarrativeDatabase:
 		make_int_var("gold", 10),
 		make_bool_var("met_guard", false),
 		make_string_var("hero_name", "Hero"),
+	]
+	db.quests = [
+		make_quest("rats", {
+			"title": "Rat Hunt",
+			"description": "Clear the cellar.",
+			"objectives": [make_objective("kill_rats", 5, "Kill cellar rats")],
+			"rewards": "gold += 100\nalert(\"ui.alert.reward\")",
+		}),
+		make_quest("intro", {"title": "Meet the Guard"}),
+		make_quest("after", {"title": "Afterparty", "prerequisites": ["intro"]}),
+		make_quest("chain_a", {"rewards": "complete_quest(\"chain_b\")"}),
+		make_quest("chain_b", {}),
+		make_quest("untracked", {"auto_track": false}),
 	]
 	db.dialogues = [
 		# linear: n1 -> n2 -> n3 -> end
@@ -134,6 +176,11 @@ static func standard() -> NarrativeDatabase:
 		make_dialogue("actions", "a1", [
 			make_node("a1", {"actions": "gold += 5\nmet_guard = true", "next": "a2", "text": "paid"}),
 			make_node("a2", {"text": "done"}),
+		]),
+		# questgiver: starts/completes quests from dialogue actions
+		make_dialogue("questgiver", "g1", [
+			make_node("g1", {"actions": "start_quest(\"rats\")", "next": "g2", "text": "go kill rats"}),
+			make_node("g2", {"conditions": "is_quest_active(\"rats\")", "text": "they await"}),
 		]),
 		# firsttime: greeting variation via has_seen on itself
 		make_dialogue("firsttime", "f1", [

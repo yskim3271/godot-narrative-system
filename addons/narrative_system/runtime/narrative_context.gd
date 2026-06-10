@@ -24,7 +24,7 @@ var runner: NarrativeDialogueRunner
 ## weak reference to their RefCounted target, so the registry alone would
 ## let this instance be freed (measured on 4.6.3 — calls turn invalid).
 var builtins: RefCounted
-var quests = null        # NarrativeQuestManager (Phase 3)
+var quests: NarrativeQuestManager
 var save_manager = null  # NarrativeSaveManager (Phase 4)
 var sequencer = null     # NarrativeSequencer (Phase 6)
 var scene_tree: SceneTree
@@ -50,6 +50,9 @@ static func create(db: NarrativeDatabase, tree: SceneTree = null) -> NarrativeCo
 
 	ctx.evaluator = Evaluator.new()
 	ctx.evaluator.setup(ctx.state)
+
+	ctx.quests = NarrativeQuestManager.new()
+	ctx.quests.setup(db, ctx.state, ctx.evaluator, ctx.localization)
 
 	ctx.runner = NarrativeDialogueRunner.new()
 	ctx.runner.setup(db, ctx.state, ctx.evaluator, ctx.localization)

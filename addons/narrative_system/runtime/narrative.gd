@@ -153,6 +153,78 @@ func get_language() -> String:
 	return context.localization.get_language() if _ok() else ""
 
 
+## UI chrome text: localized "ui.*" key when present, else the fallback.
+func get_ui_text(key: String, fallback := "") -> String:
+	return context.localization.text_or(key, fallback) if _ok() else fallback
+
+
+# --- quests ---
+
+
+func start_quest(quest_id: String) -> bool:
+	return context.quests.start_quest(quest_id) if _ok() else false
+
+
+func complete_quest(quest_id: String, force := false) -> bool:
+	return context.quests.complete_quest(quest_id, force) if _ok() else false
+
+
+func fail_quest(quest_id: String) -> bool:
+	return context.quests.fail_quest(quest_id) if _ok() else false
+
+
+func update_objective(quest_id: String, objective_id: String, delta := 1) -> bool:
+	return context.quests.update_objective(quest_id, objective_id, delta) if _ok() else false
+
+
+func get_quest_state(quest_id: String) -> String:
+	return context.quests.get_quest_state(quest_id) if _ok() else "inactive"
+
+
+func is_quest_active(quest_id: String) -> bool:
+	return context != null and context.quests.is_quest_active(quest_id)
+
+
+func is_quest_completed(quest_id: String) -> bool:
+	return context != null and context.quests.is_quest_completed(quest_id)
+
+
+func is_quest_failed(quest_id: String) -> bool:
+	return context != null and context.quests.is_quest_failed(quest_id)
+
+
+func get_quests_in_state(state: String) -> Array[String]:
+	return context.quests.get_quests_in_state(state) if _ok() else []
+
+
+func get_tracked_quests() -> Array[String]:
+	return context.quests.get_tracked_quests() if _ok() else []
+
+
+func set_quest_tracked(quest_id: String, tracked: bool) -> bool:
+	return context.quests.set_tracked(quest_id, tracked) if _ok() else false
+
+
+func is_quest_tracked(quest_id: String) -> bool:
+	return context != null and context.quests.is_tracked(quest_id)
+
+
+func get_quest_title(quest_id: String) -> String:
+	return context.quests.get_quest_title(quest_id) if _ok() else quest_id
+
+
+func get_quest_description(quest_id: String) -> String:
+	return context.quests.get_quest_description(quest_id) if _ok() else ""
+
+
+func get_objectives_progress(quest_id: String) -> Array[Dictionary]:
+	return context.quests.get_objectives_progress(quest_id) if _ok() else []
+
+
+func are_all_objectives_completed(quest_id: String) -> bool:
+	return context != null and context.quests.are_all_objectives_completed(quest_id)
+
+
 # --- alerts / barks ---
 
 
