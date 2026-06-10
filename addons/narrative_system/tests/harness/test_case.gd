@@ -75,6 +75,20 @@ func assert_contains(collection: Variant, item: Variant, message := "") -> void:
 		fail(_compose("expected %s to contain %s" % [_repr(collection), _repr(item)], message))
 
 
+## Disconnects every connection from all signals of the given object.
+## Use in after_each when a test connected lambdas that capture the context:
+## signal-held lambdas strong-capture their variables, which would otherwise
+## form RefCounted cycles (context -> subsystem -> lambda -> context) and
+## leak past process exit.
+func disconnect_all_signals(obj: Object) -> void:
+	if obj == null:
+		return
+	for sig in obj.get_signal_list():
+		for conn in obj.get_signal_connection_list(sig.name):
+			var s: Signal = conn.signal
+			s.disconnect(conn.callable)
+
+
 ## Await a real timer on the harness SceneTree (for sequencer/typewriter tests).
 func wait_seconds(seconds: float) -> void:
 	await scene_tree.create_timer(seconds).timeout

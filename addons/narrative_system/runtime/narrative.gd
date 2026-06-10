@@ -1,0 +1,210 @@
+extends Node
+## Autoload facade for the Narrative System (registered as "Narrative").
+##
+## Game code talks to this node only: it re-emits every subsystem signal
+## under the same name and delegates the public API to the context. The
+## runtime also works without this autoload — build a NarrativeContext
+## directly and pass it to UIs via their setup() method.
+##
+## NOTE: deliberately no class_name (it would collide with the autoload name).
+
+signal dialogue_started(dialogue_id: String)
+signal dialogue_resumed(dialogue_id: String, node_id: String)
+signal node_entered(node_id: String)
+signal line_presented(speaker_id: String, text: String)
+signal choices_presented(choices: Array)
+signal choice_selected(choice_id: String)
+signal dialogue_ended(dialogue_id: String)
+signal expression_changed(character_id: String, expression: String)
+signal variable_changed(variable_id: String, value: Variant)
+signal quest_updated(quest_id: String)
+signal language_changed(locale: String)
+signal alert_requested(text: String)
+signal bark_requested(character_id: String, text: String, attach_to: Node)
+
+const SETTING_DATABASE_PATH := "narrative_system/database_path"
+
+var context: NarrativeContext
+
+
+func _ready() -> void:
+	var path := str(ProjectSettings.get_setting(SETTING_DATABASE_PATH, ""))
+	if path == "":
+		# Project not configured yet — stay idle until load_database() is called.
+		return
+	if not ResourceLoader.exists(path):
+		push_error("Narrative: configured database not found at '%s' (project setting %s)" % [path, SETTING_DATABASE_PATH])
+		return
+	var db := load(path) as NarrativeDatabase
+	if db == null:
+		push_error("Narrative: resource at '%s' is not a NarrativeDatabase" % path)
+		return
+	load_database(db)
+
+
+## Replaces the active database (rebuilds the whole context). Not legal while
+## a dialogue is running.
+func load_database(db: NarrativeDatabase) -> bool:
+	if context != null and context.runner.is_dialogue_running():
+		push_error("Narrative: cannot replace the database while a dialogue is running")
+		return false
+	context = NarrativeContext.create(db, get_tree())
+	_wire(context)
+	return true
+
+
+# --- dialogue API ---
+
+
+func start_dialogue(dialogue_id: String, start_node_id := "") -> bool:
+	return context.runner.start_dialogue(dialogue_id, start_node_id) if _ok() else false
+
+
+func advance() -> bool:
+	return context.runner.advance() if _ok() else false
+
+
+func select_choice(choice_id: String) -> bool:
+	return context.runner.select_choice(choice_id) if _ok() else false
+
+
+func end_dialogue() -> bool:
+	return context.runner.end_dialogue() if _ok() else false
+
+
+func get_current_node() -> NarrativeDialogueNode:
+	return context.runner.get_current_node() if _ok() else null
+
+
+func get_available_choices() -> Array[Dictionary]:
+	return context.runner.get_available_choices() if _ok() else []
+
+
+func is_dialogue_running() -> bool:
+	return context != null and context.runner.is_dialogue_running()
+
+
+func is_waiting_for_choice() -> bool:
+	return context != null and context.runner.is_waiting_for_choice()
+
+
+func get_current_dialogue_id() -> String:
+	return context.runner.get_current_dialogue_id() if _ok() else ""
+
+
+func get_current_line_text() -> String:
+	return context.runner.get_current_line_text() if _ok() else ""
+
+
+func get_character(character_id: String) -> NarrativeCharacter:
+	return context.runner.get_character(character_id) if _ok() else null
+
+
+func get_character_display_name(character_id: String) -> String:
+	return context.runner.get_character_display_name(character_id) if _ok() else character_id
+
+
+# --- variables ---
+
+
+func get_variable(variable_id: String) -> Variant:
+	if not _ok():
+		return null
+	if not context.state.has_value(variable_id):
+		push_warning("Narrative: get_variable('%s') — variable does not exist" % variable_id)
+		return null
+	return context.state.get_value(variable_id)
+
+
+func has_variable(variable_id: String) -> bool:
+	return context != null and context.state.has_value(variable_id)
+
+
+func set_variable(variable_id: String, value: Variant) -> bool:
+	if not _ok():
+		return false
+	var result := context.state.set_value(variable_id, value)
+	if not result.ok:
+		push_error("Narrative: set_variable failed — %s" % str(result.error))
+		return false
+	if result.has("warning"):
+		push_warning("Narrative: %s" % str(result.warning))
+	return true
+
+
+# --- DSL extension ---
+
+
+## Exposes a game function to dialogue conditions/actions
+## (see docs/dsl.md — return values must be null/bool/int/float/String).
+func register_function(name: String, callable: Callable, override := false) -> bool:
+	return context.evaluator.functions.register(name, callable, override) if _ok() else false
+
+
+# --- localization ---
+
+
+func set_language(locale: String) -> void:
+	if _ok():
+		context.localization.set_language(locale)
+
+
+func get_language() -> String:
+	return context.localization.get_language() if _ok() else ""
+
+
+# --- alerts / barks ---
+
+
+func show_alert(text_or_key: String) -> void:
+	if _ok():
+		context.request_alert(text_or_key)
+
+
+func bark(character_id: String, text_or_key: String, attach_to: Node = null) -> void:
+	if _ok():
+		context.bark(character_id, text_or_key, attach_to)
+
+
+# --- actors ---
+
+
+func register_actor(actor_id: String, node: Node) -> void:
+	if _ok():
+		context.register_actor(actor_id, node)
+
+
+func unregister_actor(actor_id: String) -> void:
+	if context != null:
+		context.unregister_actor(actor_id)
+
+
+func get_actor(actor_id: String) -> Node:
+	return context.get_actor(actor_id) if _ok() else null
+
+
+# --- internals ---
+
+
+func _ok() -> bool:
+	if context == null:
+		push_error("Narrative: no database loaded — set the '%s' project setting or call load_database()" % SETTING_DATABASE_PATH)
+		return false
+	return true
+
+
+func _wire(ctx: NarrativeContext) -> void:
+	ctx.runner.dialogue_started.connect(func(id: String) -> void: dialogue_started.emit(id))
+	ctx.runner.dialogue_resumed.connect(func(id: String, node_id: String) -> void: dialogue_resumed.emit(id, node_id))
+	ctx.runner.node_entered.connect(func(id: String) -> void: node_entered.emit(id))
+	ctx.runner.line_presented.connect(func(speaker: String, text: String) -> void: line_presented.emit(speaker, text))
+	ctx.runner.choices_presented.connect(func(choices: Array) -> void: choices_presented.emit(choices))
+	ctx.runner.choice_selected.connect(func(id: String) -> void: choice_selected.emit(id))
+	ctx.runner.dialogue_ended.connect(func(id: String) -> void: dialogue_ended.emit(id))
+	ctx.runner.expression_changed.connect(func(c: String, e: String) -> void: expression_changed.emit(c, e))
+	ctx.state.variable_changed.connect(func(id: String, value: Variant) -> void: variable_changed.emit(id, value))
+	ctx.localization.language_changed.connect(func(locale: String) -> void: language_changed.emit(locale))
+	ctx.alert_requested.connect(func(text: String) -> void: alert_requested.emit(text))
+	ctx.bark_requested.connect(func(c: String, t: String, n: Node) -> void: bark_requested.emit(c, t, n))
+	if ctx.quests != null:
+		ctx.quests.quest_updated.connect(func(id: String) -> void: quest_updated.emit(id))

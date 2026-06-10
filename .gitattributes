@@ -1,0 +1,12 @@
+# Godot prefers LF everywhere; keep the repo consistent across platforms.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.webp binary
+*.ttf binary
+*.otf binary
+*.wav binary
+*.ogg binary
