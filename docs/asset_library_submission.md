@@ -2,7 +2,7 @@
 
 Asset Library는 **공개 git 저장소의 특정 커밋/태그 zip**을 그대로 서빙합니다. 이 저장소는 `.gitattributes`의 `export-ignore`로 패키지를 **`addons/narrative_system/`만** 남기도록 구성되어 있습니다(데모 프로젝트·docs·테스트·`project.godot`·루트 README 등은 저장소 전용 — 사용자의 프로젝트 파일을 덮어쓰지 않음).
 
-## 패키지 내용물 (v1.1.0 기준)
+## 패키지 내용물 (v1.2.0 기준)
 
 `git archive` 결과 = 사용자가 설치 시 받는 것:
 
@@ -19,8 +19,9 @@ addons/narrative_system/
 확인 명령(제출 전 필수):
 
 ```powershell
-git archive v1.1.0 -o package_check.zip
+git archive v1.2.0 -o package_check.zip
 # zip 내용이 addons/narrative_system/** 뿐인지, tests/가 없는지 확인 후 삭제
+# (v1.2.0 검수 완료: 117 엔트리, tests/docs/examples/project.godot 제외 확인)
 ```
 
 ## 릴리스 절차 (버전마다)
@@ -41,10 +42,10 @@ git archive v1.1.0 -o package_check.zip
 | Category | `Tools` (또는 `Scripts` — 에디터 도구+런타임 혼합은 Tools 권장) |
 | License | MIT |
 | Godot version | 4.4 (이상에서 동작, 4.6.3에서 개발·검증) |
-| Version string | `1.1.0` — plugin.cfg와 반드시 일치 |
+| Version string | `1.2.0` — plugin.cfg와 반드시 일치 |
 | Repository host / URL | GitHub / **공개 저장소 생성 후 URL 기입** (현재 로컬 저장소 — push 필요) |
 | Issues URL | `<repo URL>/issues` |
-| Download Commit | `git rev-parse v1.1.0` 결과 커밋 해시 |
+| Download Commit | `git rev-parse v1.2.0` 결과 커밋 해시 |
 | Icon URL | 저장소 raw URL의 `icon.svg` — AssetLib는 **PNG 권장(256×256)**: 필요 시 icon.png 생성 후 그 raw URL |
 | Description | 영문 — `addons/narrative_system/README.md`의 첫 단락 + Features 요약 사용 |
 | Preview images | 그래프 에디터·통합 데모·퀘스트 로그 스크린샷 권장 (선택) |
