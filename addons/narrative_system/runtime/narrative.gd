@@ -18,6 +18,7 @@ signal dialogue_ended(dialogue_id: String)
 signal expression_changed(character_id: String, expression: String)
 signal variable_changed(variable_id: String, value: Variant)
 signal quest_updated(quest_id: String)
+signal objective_completed(quest_id: String, objective_id: String)
 signal language_changed(locale: String)
 signal alert_requested(text: String)
 signal bark_requested(character_id: String, text: String, attach_to: Node)
@@ -231,6 +232,14 @@ func fail_quest(quest_id: String) -> bool:
 	return context.quests.fail_quest(quest_id) if _ok() else false
 
 
+func abandon_quest(quest_id: String) -> bool:
+	return context.quests.abandon_quest(quest_id) if _ok() else false
+
+
+func get_times_completed(quest_id: String) -> int:
+	return context.quests.get_times_completed(quest_id) if _ok() else 0
+
+
 func update_objective(quest_id: String, objective_id: String, delta := 1) -> bool:
 	return context.quests.update_objective(quest_id, objective_id, delta) if _ok() else false
 
@@ -273,6 +282,18 @@ func get_quest_title(quest_id: String) -> String:
 
 func get_quest_description(quest_id: String) -> String:
 	return context.quests.get_quest_description(quest_id) if _ok() else ""
+
+
+func get_quest_category(quest_id: String) -> String:
+	return context.quests.get_quest_category(quest_id) if _ok() else ""
+
+
+func get_quest_categories() -> Array[String]:
+	return context.quests.get_categories() if _ok() else []
+
+
+func get_quests_in_category(category: String, state := "") -> Array[String]:
+	return context.quests.get_quests_in_category(category, state) if _ok() else []
 
 
 func get_objectives_progress(quest_id: String) -> Array[Dictionary]:
@@ -340,3 +361,5 @@ func _wire(ctx: NarrativeContext) -> void:
 	ctx.sequencer.sequencer_message.connect(func(message: String) -> void: sequencer_message.emit(message))
 	if ctx.quests != null:
 		ctx.quests.quest_updated.connect(func(id: String) -> void: quest_updated.emit(id))
+		ctx.quests.objective_completed.connect(func(id: String, objective_id: String) -> void:
+			objective_completed.emit(id, objective_id))

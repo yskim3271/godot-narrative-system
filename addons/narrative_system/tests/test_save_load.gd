@@ -197,3 +197,52 @@ func test_has_and_delete_save() -> void:
 	assert_false(ctx.save_manager.has_save("t_del"))
 	assert_false(ctx.save_manager.delete_save("t_del"), "deleting a missing slot reports false")
 	assert_eq(ctx.save_manager.load_game("t_del"), ERR_FILE_NOT_FOUND)
+
+
+# --- save schema v2 (M3-2: quest completions / abandoned-inactive entries) ---
+
+
+func test_v1_save_migrates_to_v2_quest_completions() -> void:
+	var v1 := {
+		"save_version": 1,
+		"language": "en",
+		"variables": {"gold": 42},
+		"quests": {"rats": {"state": "active", "tracked": true,
+			"objectives": {"kill_rats": {"count": 2, "completed": false}}}},
+		"dialogue": {"seen_nodes": {}, "history": [], "current": null},
+		"custom": {},
+	}
+	assert_eq(ctx.save_manager.apply(v1), OK, "v1 saves load through the 1 -> 2 migration")
+	assert_eq(ctx.state.get_value("gold"), 42)
+	assert_eq(ctx.quests.get_quest_state("rats"), "active")
+	assert_eq(ctx.quests.get_objective_count("rats", "kill_rats"), 2)
+	assert_eq(ctx.quests.get_times_completed("rats"), 0, "migration backfills completions = 0")
+
+
+func test_completions_and_abandoned_inactive_roundtrip() -> void:
+	ctx.quests.start_quest("daily")
+	ctx.quests.update_objective("daily", "win", 1)
+	ctx.quests.complete_quest("daily")
+	ctx.quests.start_quest("daily")
+	ctx.quests.abandon_quest("daily")  # stored-inactive entry with completions = 1
+	ctx.quests.start_quest("rats")
+	assert_eq(ctx.save_manager.save_game("t_completions"), OK)
+	var data := _read_save("t_completions")
+	assert_eq(int(data.save_version), 2)
+	assert_eq(int(data.quests.daily.completions), 1)
+
+	var fresh := NarrativeContext.create(DbFactory.standard())
+	assert_eq(fresh.save_manager.load_game("t_completions"), OK)
+	assert_eq(fresh.quests.get_quest_state("daily"), "inactive",
+		"abandoned-inactive entry survives the roundtrip")
+	assert_eq(fresh.quests.get_times_completed("daily"), 1)
+	assert_eq(fresh.quests.get_quest_state("rats"), "active")
+	assert_true(fresh.quests.start_quest("daily"), "restartable after load")
+
+
+func test_sanitize_clamps_negative_completions() -> void:
+	var data := ctx.save_manager.capture()
+	data.quests["rats"] = {"state": "completed", "tracked": false,
+		"objectives": {}, "completions": -7}
+	assert_eq(ctx.save_manager.apply(data), OK)
+	assert_eq(ctx.quests.get_times_completed("rats"), 0, "negative completions clamp to 0")

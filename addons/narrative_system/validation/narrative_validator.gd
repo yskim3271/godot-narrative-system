@@ -19,6 +19,7 @@ const TextMarkup := preload("../runtime/text_markup.gd")
 const BUILTIN_FUNCTIONS: PackedStringArray = [
 	"str", "has_seen", "quest_state", "is_quest_active", "is_quest_completed",
 	"is_quest_failed", "start_quest", "complete_quest", "fail_quest",
+	"abandon_quest", "times_completed",
 	"update_objective", "objective_count", "set_expression", "alert",
 ]
 ## Kept in sync with runtime/builtin_commands.gd.
@@ -30,8 +31,8 @@ const BUILTIN_COMMANDS: PackedStringArray = [
 ]
 const QUEST_ID_FUNCTIONS: PackedStringArray = [
 	"quest_state", "is_quest_active", "is_quest_completed", "is_quest_failed",
-	"start_quest", "complete_quest", "fail_quest", "update_objective",
-	"objective_count",
+	"start_quest", "complete_quest", "fail_quest", "abandon_quest",
+	"times_completed", "update_objective", "objective_count",
 ]
 
 var _issues: Array[Dictionary] = []
@@ -217,6 +218,7 @@ func _check_quests() -> void:
 			if objective.target_count < 1:
 				_warning("invalid_target_count", "objective '%s' target_count is %d (minimum 1)" % [objective.id, objective.target_count], where)
 			_check_loc_key(objective.description_key, "%s > objective '%s'" % [where, objective.id])
+			_check_dsl(objective.auto_complete_condition, "condition", "%s > objective '%s' > auto_complete" % [where, objective.id])
 		_check_loc_key(quest.title_key, where)
 		_check_loc_key(quest.description_key, where)
 		_check_dsl(quest.rewards, "actions", "%s > rewards" % where)

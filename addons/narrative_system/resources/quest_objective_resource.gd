@@ -19,5 +19,10 @@ extends Resource
 @export var target_count := 1
 ## Initial progress count when the quest starts (normally 0).
 @export var initial_count := 0
+## Optional condition DSL (e.g. [code]gold >= 100[/code]). While the owning
+## quest is active, the objective auto-completes (count jumps to
+## target_count) as soon as this evaluates true — checked on quest start and
+## whenever a narrative variable changes. Empty = manual progress only.
+@export_multiline var auto_complete_condition := ""
 ## Free-form authoring metadata.
 @export var metadata: Dictionary = {}

@@ -15,6 +15,7 @@
 | `expression_changed(character_id, expression)` | 초상화 표정 변경 |
 | `variable_changed(variable_id, value)` | 변수 값이 실제로 바뀔 때 |
 | `quest_updated(quest_id)` | 퀘스트 상태/objective/추적 변경 |
+| `objective_completed(quest_id, objective_id)` | objective가 완료로 넘어가는 순간 (수동 진행/자동 완료 조건 모두) |
 | `language_changed(locale)` | 언어 전환 |
 | `alert_requested(text)` / `bark_requested(character_id, text, attach_to)` | 알림/바크 (로컬라이즈 완료된 텍스트) |
 | `sequence_event(event_name, args)` | 시퀀서 `emit_signal` 명령 |
@@ -43,11 +44,14 @@
 
 | 메서드 | 설명 |
 |---|---|
-| `start_quest(id)` / `complete_quest(id, force := false)` / `fail_quest(id)` | 상태 전이 (`-> bool`) |
-| `update_objective(quest_id, objective_id, delta := 1) -> bool` | 진행 (클램프) |
+| `start_quest(id)` / `complete_quest(id, force := false)` / `fail_quest(id)` | 상태 전이 (`-> bool`) — repeatable 퀘스트는 completed/failed에서도 `start_quest` 재시작 가능 |
+| `abandon_quest(id) -> bool` | active 퀘스트 포기 → inactive (진행도 폐기, 완료 이력 보존) |
+| `get_times_completed(id) -> int` | 누적 완료 횟수 (반복 퀘스트) |
+| `update_objective(quest_id, objective_id, delta := 1) -> bool` | 진행 (클램프) — objective의 `auto_complete_condition`은 변수 변경 시 자동 평가 |
 | `get_quest_state(id) -> String` | `"inactive" / "active" / "completed" / "failed"` |
 | `is_quest_active/completed/failed(id) -> bool` · `are_all_objectives_completed(id) -> bool` | 질의 |
 | `get_quests_in_state(state) -> Array[String]` · `get_tracked_quests() -> Array[String]` | 목록(정렬) |
+| `get_quest_category(id) -> String` · `get_quest_categories() -> Array[String]` · `get_quests_in_category(category, state := "") -> Array[String]` | 카테고리 |
 | `set_quest_tracked(id, on) -> bool` · `is_quest_tracked(id) -> bool` | 트래커 |
 | `get_quest_title/get_quest_description(id) -> String` · `get_objectives_progress(id) -> Array[Dictionary]` | UI용(로컬라이즈) — progress 항목: `{id, text, count, target, completed}` |
 

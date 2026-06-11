@@ -14,8 +14,13 @@ extends RefCounted
 ## from_version (int) -> Callable(Dictionary) -> Dictionary
 static func defaults() -> Dictionary:
 	return {
-		# Example for a future bump:
-		# 1: func(data: Dictionary) -> Dictionary:
-		# 	data["new_field"] = {}
-		# 	return data,
+		# v1 -> v2: quest entries gained a "completions" counter (repeatable
+		# quests, M3-2). v1 saves predate repeats, so every quest has 0.
+		1: func(data: Dictionary) -> Dictionary:
+			var quests: Variant = data.get("quests", {})
+			if typeof(quests) == TYPE_DICTIONARY:
+				for quest_id: String in quests:
+					if typeof(quests[quest_id]) == TYPE_DICTIONARY and not quests[quest_id].has("completions"):
+						quests[quest_id]["completions"] = 0
+			return data,
 	}

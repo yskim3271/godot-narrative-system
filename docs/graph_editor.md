@@ -29,6 +29,7 @@
 | 배치 저장 | 노드를 끌어 정리 → Save (위치는 노드 `metadata.graph_position`에 .tres로 저장) |
 | 실행 취소/복구 | 위 모든 편집·구조 변경은 에디터 표준 **Ctrl+Z / Ctrl+Y**로 취소·복구 |
 | 새 대화 | New Dialogue → id 입력 (start 노드 자동 생성) |
+| 이슈에서 점프 | 하단 Narrative 패널의 **Validation/Localization 행 더블클릭** → 메인 스크린 전환 + 해당 노드 선택·중앙 정렬 (`focus_node` API) |
 
 처음 여는 대화는 시작 노드 기준 BFS **자동 배치**됩니다(깊이=열, 분기=행).
 

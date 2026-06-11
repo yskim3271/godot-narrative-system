@@ -22,6 +22,8 @@ func install(context) -> void:
 	reg.register("start_quest", fn_start_quest)
 	reg.register("complete_quest", fn_complete_quest)
 	reg.register("fail_quest", fn_fail_quest)
+	reg.register("abandon_quest", fn_abandon_quest)
+	reg.register("times_completed", fn_times_completed)
 	reg.register("update_objective", fn_update_objective)
 	reg.register("objective_count", fn_objective_count)
 	reg.register("set_expression", fn_set_expression)
@@ -69,6 +71,16 @@ func fn_complete_quest(quest_id: String) -> bool:
 func fn_fail_quest(quest_id: String) -> bool:
 	var quests = _quests("fail_quest")
 	return quests != null and quests.fail_quest(quest_id)
+
+
+func fn_abandon_quest(quest_id: String) -> bool:
+	var quests = _quests("abandon_quest")
+	return quests != null and quests.abandon_quest(quest_id)
+
+
+func fn_times_completed(quest_id: String) -> int:
+	var quests = _quests()
+	return quests.get_times_completed(quest_id) if quests != null else 0
 
 
 func fn_update_objective(quest_id: String, objective_id: String, delta := 1.0) -> bool:

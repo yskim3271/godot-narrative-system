@@ -16,6 +16,7 @@
 | `expression_changed(character_id, expression)` | DialogueRunner/Sequencer | String, String | DialogueBox 초상화 |
 | `variable_changed(variable_id, value)` | NarrativeState | String, Variant | 게임 코드, QuestTracker |
 | `quest_updated(quest_id)` | QuestManager | String | QuestLog, QuestTracker, Alert 글루 |
+| `objective_completed(quest_id, objective_id)` | QuestManager | String, String | 게임 코드(목표 달성 연출) |
 | `language_changed(locale)` | LocalizationManager | String | 모든 UI 재렌더 |
 | `alert_requested(text)` | 파사드 | String | AlertUI 큐 |
 | `bark_requested(character_id, text, attach_to)` | 파사드 | String, String, Node | BarkUI |

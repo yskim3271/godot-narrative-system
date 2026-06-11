@@ -1,4 +1,4 @@
-# 저장 포맷 사양 (save_version 1)
+# 저장 포맷 사양 (save_version 2)
 
 저장 파일은 `user://saves/<slot>.json`에 **사람이 읽을 수 있는 UTF-8 JSON**(탭 들여쓰기)으로 기록된다. `.tres`/`str_to_var` 기반 직렬화는 보안상(스크립트 임베드 = 임의 코드 실행) 사용하지 않는다 — 로드는 `JSON.parse_string` 단일 경로.
 
@@ -6,7 +6,7 @@
 
 ```jsonc
 {
-  "save_version": 1,                  // int, 필수. 마이그레이션 기준. 현재보다 크면 로드 거부
+  "save_version": 2,                  // int, 필수. 마이그레이션 기준. 현재보다 크면 로드 거부
   "plugin_version": "0.1.0",          // 진단용 (분기 금지)
   "saved_at": "2026-06-11T12:34:56Z", // ISO 8601 UTC — 사람 가독성
   "saved_at_unix": 1781181296,        // 슬롯 정렬용
@@ -14,13 +14,16 @@
   "variables": {                      // String → null|bool|number|String
     "player.gold": 25, "met_guard": true
   },
-  "quests": {                         // inactive 상태인 퀘스트는 기록하지 않음
+  "quests": {                         // 손대지 않은 inactive 퀘스트는 기록하지 않음
     "find_sword": {
-      "state": "active",              // "active"|"completed"|"failed" (부재=inactive)
+      "state": "active",              // "inactive"|"active"|"completed"|"failed" (부재=inactive)
       "tracked": true,                // QuestTracker HUD 표시 여부
-      "objectives": { "kill_rats": { "count": 3, "completed": false } }
+      "objectives": { "kill_rats": { "count": 3, "completed": false } },
+      "completions": 0                // v2: 완료 횟수 (반복 퀘스트). abandon 후에도 보존
     }
   },
+  // "state": "inactive" 항목은 완료 이력이 있는 퀘스트를 abandon했을 때만 존재
+  // (completions를 보존하기 위함; objectives는 비어 있음)
   "dialogue": {
     "seen_nodes": { "guard_intro": ["n2", "start"] },   // 정렬 배열 — diff 안정성
     "history": [ { "d": "guard_intro", "n": "start", "t": 1781181200 } ],  // 상한 settings.history_limit(기본 200)
@@ -60,6 +63,13 @@ while data.save_version < CURRENT_SAVE_VERSION:
 ```
 
 스키마 변경 시 절차: `version.gd`의 `SAVE_VERSION` 증가 → 마이그레이션 함수 추가 → 구버전 픽스처로 테스트 추가.
+
+### 이력
+
+| 버전 | 변경 | 마이그레이션 |
+|---|---|---|
+| 1 | 최초 스키마 | — |
+| 2 | 퀘스트 항목에 `completions` 추가, abandon된 퀘스트의 `"state": "inactive"` 항목 허용 (M3-2 반복 퀘스트) | 1→2: 모든 퀘스트 항목에 `completions: 0` 백필 |
 
 ## 5. 대화 재개(try_resume) 규칙
 

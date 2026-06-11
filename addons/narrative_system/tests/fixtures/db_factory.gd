@@ -66,17 +66,18 @@ static func make_choice(id: String, opts := {}) -> NarrativeChoice:
 	return choice
 
 
-static func make_objective(id: String, target: int, description := "", initial := 0) -> NarrativeQuestObjective:
+static func make_objective(id: String, target: int, description := "", initial := 0, auto := "") -> NarrativeQuestObjective:
 	var objective := NarrativeQuestObjective.new()
 	objective.id = id
 	objective.description = description if description != "" else "objective %s" % id
 	objective.target_count = target
 	objective.initial_count = initial
+	objective.auto_complete_condition = auto
 	return objective
 
 
 ## opts: title, description, objectives (Array), prerequisites (Array),
-## rewards, auto_track
+## rewards, auto_track, repeatable, category
 static func make_quest(id: String, opts := {}) -> NarrativeQuest:
 	var quest := NarrativeQuest.new()
 	quest.id = id
@@ -92,6 +93,8 @@ static func make_quest(id: String, opts := {}) -> NarrativeQuest:
 	quest.prerequisites = prerequisites
 	quest.rewards = opts.get("rewards", "")
 	quest.auto_track = opts.get("auto_track", true)
+	quest.repeatable = opts.get("repeatable", false)
+	quest.category = opts.get("category", "")
 	return quest
 
 
@@ -140,12 +143,25 @@ static func standard() -> NarrativeDatabase:
 			"description": "Clear the cellar.",
 			"objectives": [make_objective("kill_rats", 5, "Kill cellar rats")],
 			"rewards": "gold += 100\nalert(\"ui.alert.reward\")",
+			"category": "hunting",
 		}),
-		make_quest("intro", {"title": "Meet the Guard"}),
-		make_quest("after", {"title": "Afterparty", "prerequisites": ["intro"]}),
+		make_quest("intro", {"title": "Meet the Guard", "category": "story"}),
+		make_quest("after", {"title": "Afterparty", "prerequisites": ["intro"], "category": "story"}),
 		make_quest("chain_a", {"rewards": "complete_quest(\"chain_b\")"}),
 		make_quest("chain_b", {}),
 		make_quest("untracked", {"auto_track": false}),
+		# repeatable daily quest (one manual objective)
+		make_quest("daily", {
+			"title": "Daily Run",
+			"objectives": [make_objective("win", 1, "Win once")],
+			"repeatable": true,
+			"category": "daily",
+		}),
+		# objective auto-completes when gold reaches 100
+		make_quest("fortune", {
+			"title": "Get Rich",
+			"objectives": [make_objective("have_gold", 1, "Hold 100 gold", 0, "gold >= 100")],
+		}),
 	]
 	db.dialogues = [
 		# linear: n1 -> n2 -> n3 -> end
@@ -227,7 +243,8 @@ static func clean() -> NarrativeDatabase:
 	table.set_text("dlg.hello.h1.text", "ko", "안녕")
 	db.localization_tables = [table]
 	db.quests = [
-		make_quest("intro", {"title": "Intro", "rewards": "gold += 5"}),
+		make_quest("intro", {"title": "Intro", "rewards": "gold += 5", "category": "main",
+			"objectives": [make_objective("greet", 1, "Greet the guard", 0, "met_guard")]}),
 	]
 	db.dialogues = [
 		make_dialogue("hello", "h1", [

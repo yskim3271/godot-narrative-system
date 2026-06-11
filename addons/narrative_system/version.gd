@@ -7,4 +7,4 @@ extends RefCounted
 ## every bump requires a migration entry in runtime/save_migrations.gd.
 
 const VERSION := "1.1.0"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2

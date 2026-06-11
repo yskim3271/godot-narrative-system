@@ -30,6 +30,13 @@ extends Resource
 @export_multiline var rewards := ""
 ## Show this quest in the QuestTracker HUD automatically when started.
 @export var auto_track := true
+## Repeatable quests can be started again after being completed or failed
+## (objective progress resets; the completion count is kept — see
+## QuestManager.get_times_completed()).
+@export var repeatable := false
+## Free-form grouping tag for quest log filtering (e.g. "main", "side",
+## "daily"). Purely organizational — the runtime never interprets it.
+@export var category := ""
 ## Free-form authoring metadata.
 @export var metadata: Dictionary = {}
 

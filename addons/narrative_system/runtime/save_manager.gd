@@ -14,7 +14,8 @@ extends RefCounted
 
 const NSVersion := preload("../version.gd")
 const Migrations := preload("save_migrations.gd")
-const VALID_QUEST_STATES: PackedStringArray = ["active", "completed", "failed"]
+## "inactive" entries exist for abandoned quests with a completion history.
+const VALID_QUEST_STATES: PackedStringArray = ["inactive", "active", "completed", "failed"]
 
 var save_dir := "user://saves"
 ## from_version (int) -> Callable; replaceable for tests / game extensions.
@@ -231,6 +232,7 @@ func _sanitize_quest_entry(quest_id: String, entry: Dictionary) -> Dictionary:
 		"state": str(entry.state),
 		"tracked": bool(entry.get("tracked", false)),
 		"objectives": objectives,
+		"completions": maxi(int(entry.get("completions", 0)), 0),
 	}
 
 

@@ -64,7 +64,7 @@ primary     = NUMBER | STRING | "true" | "false" | "null" | call | IDENT | "(" e
 
 ## 5. 내장 함수
 
-`str(x)` · `has_seen(dialogue_id[, node_id])` · `quest_state(id)→String` · `is_quest_active(id)` · `is_quest_completed(id)` · `is_quest_failed(id)` · `start_quest(id)` · `complete_quest(id)` · `fail_quest(id)` · `update_objective(quest_id, objective_id, delta=1)` · `set_expression(character_id, expression)` · `alert(text_or_key)`
+`str(x)` · `has_seen(dialogue_id[, node_id])` · `quest_state(id)→String` · `is_quest_active(id)` · `is_quest_completed(id)` · `is_quest_failed(id)` · `start_quest(id)` · `complete_quest(id)` · `fail_quest(id)` · `abandon_quest(id)` · `times_completed(id)→int` · `update_objective(quest_id, objective_id, delta=1)` · `objective_count(quest_id, objective_id)→int` · `set_expression(character_id, expression)` · `alert(text_or_key)`
 
 ## 6. 게임 함수 등록
 
