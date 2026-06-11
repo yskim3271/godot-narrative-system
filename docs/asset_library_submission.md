@@ -43,10 +43,10 @@ git archive v1.2.0 -o package_check.zip
 | License | MIT |
 | Godot version | 4.4 (이상에서 동작, 4.6.3에서 개발·검증) |
 | Version string | `1.2.0` — plugin.cfg와 반드시 일치 |
-| Repository host / URL | GitHub / **공개 저장소 생성 후 URL 기입** (현재 로컬 저장소 — push 필요) |
-| Issues URL | `<repo URL>/issues` |
-| Download Commit | `git rev-parse v1.2.0` 결과 커밋 해시 |
-| Icon URL | 저장소 raw URL의 `icon.svg` — AssetLib는 **PNG 권장(256×256)**: 필요 시 icon.png 생성 후 그 raw URL |
+| Repository host / URL | GitHub / `https://github.com/yskim3271/godot-narrative-system` (main + v1.0.0/v1.1.0/v1.2.0 태그 push 완료) |
+| Issues URL | `https://github.com/yskim3271/godot-narrative-system/issues` |
+| Download Commit | `04074dfe217eac7103fd7a1a65d3696570a9f279` (= `git rev-parse v1.2.0`) |
+| Icon URL | `https://raw.githubusercontent.com/yskim3271/godot-narrative-system/main/icon.png` (icon.svg에서 256×256 PNG 생성 — `scripts/make_icon.gd`) |
 | Description | 영문 — `addons/narrative_system/README.md`의 첫 단락 + Features 요약 사용 |
 | Preview images | 그래프 에디터·통합 데모·퀘스트 로그 스크린샷 권장 (선택) |
 
