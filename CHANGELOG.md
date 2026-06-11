@@ -1,9 +1,13 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 (2026-06-11)
 
 ### 추가
-- **그래프 에디터 인라인 편집**: 노드 화자·텍스트를 캔버스에서 직접 편집(포커스 이탈 시 1 undo 단위로 커밋). 헤더의 id 칸으로 **노드 rename** 시 그 id를 가리키던 next/choice 링크와 `start_node_id`를 전부 자동 추적(`rename_node`). 전부 Ctrl+Z/Y 대응. (docs/graph_editor.md)
+- **그래프 에디터 인라인 편집**: 노드 화자·텍스트·**선택지 텍스트/타깃**을 캔버스에서 직접 편집(포커스 이탈 시 1 undo 단위로 커밋). 헤더의 id 칸으로 **노드 rename** 시 그 id를 가리키던 next/choice 링크와 `start_node_id`를 전부 자동 추적(`rename_node`). 타깃 칸은 포트 드래그·undo와 양방향 동기. 전부 Ctrl+Z/Y 대응. (docs/graph_editor.md)
+- **인라인 마크업 `[var=x]`**: 대사/선택지/바크/알림 텍스트에서 내러티브 변수 치환(로컬라이징 해석 후 적용, 미선언 변수는 원문 유지 + 검증기 `markup_unknown_variable` 경고). BBCode는 통과. 에디터 단축키 — Ctrl+Shift+V(`[var=…]` 삽입)/Ctrl+Shift+C(`[color]` 감싸기), 선택지 자동 넘버링(툴바 1.2.3 / Ctrl+Shift+N, 토글). (docs/dialogue_authoring.md)
+- **시퀀서 병렬 스케줄링 + 메시지 동기화** (Unity DS 패리티): `cmd() @ 2.5`(런 시작 기준 병렬), `cmd() @ message("name")`(대기), `cmd() -> "name"`(완료 시 브로드캐스트, 스킵돼도 발생 — 데드락 방지). `run_finished`는 전 작업 완료 시. `Narrative.send_sequencer_message()` + `sequencer_message` 시그널. 장식 없는 줄은 기존 순차 동작 그대로. (docs/sequencer.md)
+- **3D 지원**: `move_camera_3d(x,y,z[,d])`, 3D 액터 `focus_camera`(제자리 회전 주시), BarkUI 3D 말풍선(화면 공간 투영 추적).
+- **Asset Library 패키징**: `.gitattributes` export-ignore로 배포 zip을 `addons/narrative_system/`만으로 구성, 영문 패키지 README, 제출 체크리스트(docs/asset_library_submission.md).
 
 ### 수정
 - **그래프 에디터가 실제 에디터 메인스크린에서 빈 캔버스로 표시되던 출하 1.0.0 결함**: 메인스크린은 Container라 anchors를 무시하는데 `EXPAND_FILL`이 없어 GraphEdit 높이가 0이 됨 → size flags 추가. headless 수동 확인에서 발견, 회귀 테스트 추가.

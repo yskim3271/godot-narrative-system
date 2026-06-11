@@ -5,6 +5,7 @@
 - **요구 버전**: Godot 4.4+ (4.6.3에서 개발·테스트)
 - **언어**: GDScript (외부 의존성 없음)
 - **라이선스**: MIT
+- **English**: see the package README — [addons/narrative_system/README.md](addons/narrative_system/README.md)
 
 ## 왜 이 애드온인가
 
@@ -22,7 +23,7 @@
 - **Resource 네이티브**: 모든 데이터가 `.tres` — Inspector에서 편집, VCS 친화적
 - **eval 없는 안전한 DSL**: 조건/액션/시퀀서 명령은 자체 파서로 해석 (임의 코드 실행 불가, 게임 함수는 화이트리스트 등록)
 - **signal 우선 느슨한 결합**: 게임 코드는 `Narrative` 파사드의 시그널만 구독 — 모든 기본 UI는 교체 가능한 레퍼런스 구현
-- **headless 테스트 가능**: UI 없이 전체 로직 실행 — 자체 테스트 137개 + 해피패스 무에러 게이트 + 데이터 검증 CLI
+- **headless 테스트 가능**: UI 없이 전체 로직 실행 — 자체 테스트 212개 + 해피패스 무에러 게이트 + 데이터 검증 CLI
 - **본 노드 추적(SimStatus)**: `has_seen()`으로 첫만남/재방문 분기
 - **사람이 읽는 저장 파일**: 순수 JSON, 원자적 쓰기, 손상 격리, 스키마 마이그레이션
 
@@ -73,12 +74,13 @@ Narrative.quest_updated.connect(func(id): print("quest: ", id))
 | [architecture.md](docs/architecture.md) · [signals.md](docs/signals.md) | 내부 설계 |
 | [security_notes.md](docs/security_notes.md) | .tres 신뢰 경계, 저장 파일 안전성 |
 | [known_limitations.md](docs/known_limitations.md) · [roadmap.md](docs/roadmap.md) | 한계와 다음 단계 |
+| [asset_library_submission.md](docs/asset_library_submission.md) | Asset Library 패키징·제출 체크리스트 |
 | [test_report.md](docs/test_report.md) | 테스트 현황과 실행 방법 |
 
 ## 테스트 실행
 
 ```powershell
-.\scripts\run_tests.ps1          # import → 유닛 137개 → 해피패스 순수성 → DB 검증
+.\scripts\run_tests.ps1          # import → 유닛 212개 → 해피패스 순수성 → DB 검증 → 데모 부팅
 .\scripts\run_tests.ps1 -Filter lexer
 ```
 
@@ -92,7 +94,7 @@ addons/narrative_system/   # 애드온 본체 (이 폴더만 복사하면 설치
   editor/                  #   에디터 하단 패널 (@tool)
   validation/              #   정적 검증기 + CLI (에디터 비의존)
   import_export/           #   로컬라이징 CSV
-  tests/                   #   자체 headless 테스트 하니스 + 137 테스트
+  tests/                   #   자체 headless 테스트 하니스 + 212 테스트 (배포 패키지에선 제외)
 examples/integrated_demo/  # 통합 데모 (▶ 실행)
 docs/                      # 문서 · 설계 · Phase별 구현 보고서
 ```

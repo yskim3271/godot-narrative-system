@@ -19,7 +19,7 @@
 1. Yarn Spinner / Ink 임포터 (NarrativeDatabase로 변환)
 2. CSV로 대화 본문 왕복(현재는 로컬라이징 테이블만)
 3. C# 우선 API 래퍼 + 예제
-4. ~~데모 4분할(basic/quest/localization/cutscene)~~ ✅ 1.0.0 — 잔여: Godot Asset Library 패키징(버전 태그, export-ignore)
+4. ~~데모 4분할(basic/quest/localization/cutscene)~~ ✅ 1.0.0 · ~~Godot Asset Library 패키징~~ ✅ 1.1.0 (export-ignore 패키지 구성, 영문 README, 제출 체크리스트 [asset_library_submission.md](asset_library_submission.md), v1.1.0 태그) — 잔여: 공개 저장소 push 후 실제 제출
 
 ## 항시 항목
 

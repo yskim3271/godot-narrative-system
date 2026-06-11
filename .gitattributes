@@ -10,3 +10,22 @@
 *.otf binary
 *.wav binary
 *.ogg binary
+
+# --- Asset Library packaging -------------------------------------------------
+# `git archive` (and the GitHub source zips the Asset Library serves) must
+# contain ONLY the addon itself: addons/narrative_system/ with its README and
+# LICENSE. Everything project-level (demo project, docs, dev tooling) stays
+# repo-only — installing the asset must never overwrite a user's project
+# files. See docs/asset_library_submission.md.
+/docs export-ignore
+/examples export-ignore
+/scripts export-ignore
+/addons/narrative_system/tests export-ignore
+/project.godot export-ignore
+/icon.svg export-ignore
+/icon.svg.import export-ignore
+/README.md export-ignore
+/CHANGELOG.md export-ignore
+/LICENSE export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
