@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Exports a NarrativeLocalizationTable to CSV (header: key,<locale>,...).
 ## Keys are sorted for stable diffs; fields are RFC-4180 quoted as needed.

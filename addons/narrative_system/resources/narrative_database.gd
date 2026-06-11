@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeDatabase
 extends Resource
 ## Root resource holding all narrative data: characters, dialogues, quests,

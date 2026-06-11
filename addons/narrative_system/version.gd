@@ -5,5 +5,5 @@ extends RefCounted
 ## SAVE_VERSION is bumped only when the save JSON schema changes;
 ## every bump requires a migration entry in runtime/save_migrations.gd.
 
-const VERSION := "0.1.0"
+const VERSION := "0.2.0-dev"
 const SAVE_VERSION := 1

@@ -25,7 +25,7 @@ UI 씬들(DialogueBox/ChoiceList/QuestLog/...) ── signal 구독 전용 (+ se
 2. **파사드는 서브시스템 시그널을 동일 이름으로 재방출.** 게임 코드는 `Narrative.line_presented.connect(...)`만 알면 됨.
 3. **테스트/비autoload 사용**: `NarrativeContext.create(db, tree)`로 독립 조립.
 4. **리소스 순수성**: `.tres` 리소스는 런타임에 절대 수정하지 않는다. 퀘스트 상태·objective 카운트 등 가변 상태는 첫 접근 시 `NarrativeState`로 복사(copy-on-first-touch). 이유: Godot 리소스는 캐시 공유 인스턴스라 수정하면 (a) 저작 데이터 오염, (b) 에디터에서 .tres 역저장 사고, (c) 새 게임 시작 시 이전 런 상태 잔존.
-5. **editor/runtime 분리**: `@tool`은 `plugin.gd`+`editor/`에만. `validation/`은 에디터 비의존(headless CLI 겸용). 런타임은 에디터 클래스를 절대 import하지 않음.
+5. **editor/runtime 분리**: 런타임은 에디터 클래스를 절대 import하지 않음. `validation/`·그래프 모델은 에디터 비의존(headless 테스트/CLI 겸용). **@tool 규칙**: 에디터 코드가 메서드를 호출하는 모든 순수 로직 스크립트(리소스, validator, CSV 도구, DSL 렉서/파서, 그래프 모델)는 `@tool` — 아니면 에디터에서 placeholder 인스턴스가 되어 메서드 호출이 실패한다(4.6.3 실측). 단, 이들 스크립트는 엔진 콜백(_ready 등)·부작용 코드를 갖지 않는다는 전제를 유지한다. 씬 트리 UI/노드(runtime ui, actor 등)는 non-@tool.
 6. **명명 동결**: 모든 class_name은 `Narrative*` 접두사(전역 충돌 방지). 스크립트 경로와 클래스명은 공개 API로 취급해 변경 금지.
 
 ## 2. 재진입(re-entrancy) 가드

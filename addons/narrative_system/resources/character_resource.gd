@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeCharacter
 extends Resource
 ## A speaker/actor definition: display name, portrait and expressions.

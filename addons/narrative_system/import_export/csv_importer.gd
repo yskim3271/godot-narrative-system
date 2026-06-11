@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Imports localization CSV (header: key,<locale>,...) into a
 ## NarrativeLocalizationTable. Strips the UTF-8 BOM Excel likes to add.

@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeQuestObjective
 extends Resource
 ## One objective inside a [NarrativeQuest].

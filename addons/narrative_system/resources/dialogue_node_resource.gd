@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeDialogueNode
 extends Resource
 ## One line of dialogue inside a [NarrativeDialogue] graph.

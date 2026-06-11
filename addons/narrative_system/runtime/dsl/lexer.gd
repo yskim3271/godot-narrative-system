@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Tokenizer for the Narrative DSL (conditions / actions / sequencer lines).
 ##

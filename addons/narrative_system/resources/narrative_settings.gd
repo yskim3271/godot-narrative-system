@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeSettings
 extends Resource
 ## Global behavior settings, stored inside a [NarrativeDatabase].

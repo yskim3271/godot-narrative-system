@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeQuest
 extends Resource
 ## A quest definition: objectives, prerequisites and rewards.

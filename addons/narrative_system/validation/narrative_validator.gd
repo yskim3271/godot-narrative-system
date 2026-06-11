@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeValidator
 extends RefCounted
 ## Static analysis for a NarrativeDatabase. Editor-independent: used by the

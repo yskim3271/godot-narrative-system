@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Recursive-descent parser for the Narrative DSL.
 ##

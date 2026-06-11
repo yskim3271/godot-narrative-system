@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeLocalizationTable
 extends Resource
 ## Key → locale → text table used by the LocalizationManager.

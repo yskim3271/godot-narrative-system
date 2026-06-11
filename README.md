@@ -53,6 +53,7 @@ Narrative.quest_updated.connect(func(id): print("quest: ", id))
 |---|---|
 | [getting_started.md](docs/getting_started.md) | 설치(플러그인/수동 autoload), 10분 만에 첫 대화 |
 | [dialogue_authoring.md](docs/dialogue_authoring.md) | Inspector 저작 워크플로, 분기 패턴, 함정 |
+| [graph_editor.md](docs/graph_editor.md) | **노드 그래프 에디터** (메인 스크린 Narrative 탭) |
 | [dsl.md](docs/dsl.md) | 조건/액션 미니 언어 문법·의미론 |
 | [quest_system.md](docs/quest_system.md) | 퀘스트 상태·objective·보상·UI |
 | [save_load.md](docs/save_load.md) · [save_format.md](docs/save_format.md) | 사용법 · JSON 스키마/마이그레이션 |

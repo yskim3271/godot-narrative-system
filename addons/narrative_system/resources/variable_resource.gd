@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeVariable
 extends Resource
 ## Declaration of a narrative variable: id, type and default value.

@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeChoice
 extends Resource
 ## A player response option attached to a [NarrativeDialogueNode].
