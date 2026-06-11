@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### 추가
+- **그래프 에디터 인라인 편집**: 노드 화자·텍스트를 캔버스에서 직접 편집(포커스 이탈 시 1 undo 단위로 커밋). 헤더의 id 칸으로 **노드 rename** 시 그 id를 가리키던 next/choice 링크와 `start_node_id`를 전부 자동 추적(`rename_node`). 전부 Ctrl+Z/Y 대응. (docs/graph_editor.md)
+
+### 수정
+- **그래프 에디터가 실제 에디터 메인스크린에서 빈 캔버스로 표시되던 출하 1.0.0 결함**: 메인스크린은 Container라 anchors를 무시하는데 `EXPAND_FILL`이 없어 GraphEdit 높이가 0이 됨 → size flags 추가. headless 수동 확인에서 발견, 회귀 테스트 추가.
+- `NarrativeDialogue.invalidate_index()`: in-place 노드 id 변경(rename) 시 size 기반 자동 재빌드가 놓치던 스테일 노드 인덱스(1.0.0의 DB 레벨 `invalidate_indexes()`에 대응하는 대화 레벨 수정).
+
 ## 1.0.0 (2026-06-11) — 개발 완료
 
 원 스펙의 필수 기능 20종 전부 구현·검증 완료. (의도적 유예: Yarn/Ink 임포터, C# 전용 API, `@time` 병렬 시퀀서, 에셋 라이브러리 패키징 — roadmap.md)

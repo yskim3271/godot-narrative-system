@@ -11,13 +11,17 @@ extends Control
 ##   input  port 0          = incoming links
 ##   output port 0          = next_node_id        (slot 0, header row)
 ##   output port 1..N       = choices[port - 1]   (slots 2.., one per choice)
-## Slot 1 is the portless text preview row.
+## Slot 1 is the portless text-editor row.
 ##
-## Field editing happens in the Inspector: selecting a graph node opens its
-## NarrativeDialogueNode there. Structural changes made in the Inspector
-## (e.g. added choices) appear after Refresh / re-opening the tab.
-## Structural edits (add/delete/link/move/set-start) are undoable through the
-## injected EditorUndoRedoManager (see set_undo_redo and docs/graph_editor.md).
+## Inline editing (undoable): the node id and speaker_id (header row, slot 0 —
+## renaming the id retargets every link to it) and text (slot 1) are edited in
+## place. The title mirrors the id read-only (▶ marks the start node).
+## Remaining fields (conditions/actions/sequencer/choices) are edited in the
+## Inspector — selecting a node opens its NarrativeDialogueNode there; those
+## show as ❓⚡🎬 badges and refresh after Refresh / re-opening the tab.
+## All edits (inline + structural add/delete/link/move/set-start/rename) are
+## undoable through the injected EditorUndoRedoManager (see set_undo_redo and
+## docs/graph_editor.md).
 
 const GraphModel := preload("dialogue_graph_model.gd")
 const SETTING_DATABASE_PATH := "narrative_system/database_path"
@@ -293,24 +297,51 @@ func _spawn_graph_node(node: NarrativeDialogueNode) -> GraphNode:
 	gnode.name = gname
 	_gname_to_id[gname] = node.id
 	_id_to_gname[node.id] = gname
+	# Title shows the id (read-only, ▶ for the start node — see _update_start_styling).
 	gnode.title = node.id
 	gnode.position_offset = GraphModel.get_position(node)
 
-	# slot 0 — header: in (previous) / out (next)
-	var header := Label.new()
-	header.text = _header_text(node)
+	# slot 0 — header: id (rename) + speaker editors + badges, in/out ports.
+	# These live in the node BODY, not the titlebar: titlebar children fight the
+	# node-drag/select gesture and never reliably grab keyboard focus.
+	var header := HBoxContainer.new()
+	var id_edit := LineEdit.new()
+	id_edit.text = node.id
+	id_edit.custom_minimum_size = Vector2(96, 0)
+	id_edit.tooltip_text = "Node id — renaming retargets every link to it"
+	header.add_child(id_edit)
+	var speaker_edit := LineEdit.new()
+	speaker_edit.text = node.speaker_id
+	speaker_edit.placeholder_text = "(narrator)"
+	speaker_edit.flat = true
+	speaker_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	speaker_edit.custom_minimum_size = Vector2(110, 0)
+	speaker_edit.tooltip_text = "Speaker id"
+	header.add_child(speaker_edit)
+	var badges := Label.new()
+	badges.text = _badge_text(node)
+	header.add_child(badges)
 	gnode.add_child(header)
 	gnode.set_slot(0, true, 0, COLOR_IN, true, 0, COLOR_NEXT)
+	gnode.set_meta("id_edit", id_edit)
+	gnode.set_meta("speaker_edit", speaker_edit)
+	_wire_inline_edit(id_edit, _commit_rename.bind(id_edit, node.id))
+	_wire_inline_edit(speaker_edit, _commit_field.bind(speaker_edit, node.id, "speaker"))
 
-	# slot 1 — text preview, no ports
-	var preview := Label.new()
-	preview.text = _ellipsis(node.text, 90)
-	preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	preview.custom_minimum_size = Vector2(240, 0)
-	preview.modulate = Color(1, 1, 1, 0.8)
-	gnode.add_child(preview)
+	# slot 1 — editable dialogue text, no ports.
+	var text_edit := TextEdit.new()
+	text_edit.text = node.text
+	text_edit.placeholder_text = "dialogue text…"
+	text_edit.custom_minimum_size = Vector2(240, 60)
+	text_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	text_edit.scroll_fit_content_height = true
+	gnode.add_child(text_edit)
+	gnode.set_meta("text_edit", text_edit)
+	# TextEdit is multiline: Enter inserts a newline, so commit on focus loss only.
+	text_edit.focus_entered.connect(_capture_edit_before.bind(text_edit))
+	text_edit.focus_exited.connect(_commit_field.bind(text_edit, node.id, "text"))
 
-	# slots 2.. — one output port per choice
+	# slots 2.. — one output port per choice (targets edited via the Inspector)
 	for i in node.choices.size():
 		var choice := node.choices[i]
 		var row := Label.new()
@@ -324,6 +355,48 @@ func _spawn_graph_node(node: NarrativeDialogueNode) -> GraphNode:
 
 	_graph.add_child(gnode)
 	return gnode
+
+
+## Wires a single-line field: capture its value on focus, commit on focus loss,
+## and treat Enter as "done" (release focus -> triggers the commit).
+func _wire_inline_edit(edit: LineEdit, commit: Callable) -> void:
+	edit.focus_entered.connect(_capture_edit_before.bind(edit))
+	edit.focus_exited.connect(commit)
+	edit.text_submitted.connect(func(_t: String) -> void: edit.release_focus())
+
+
+func _capture_edit_before(control: Control) -> void:
+	control.set_meta("edit_before", control.text)
+
+
+## Commits an inline text/speaker edit as one undoable action (before -> after
+## captured per focus session, so a whole edit is a single undo step).
+func _commit_field(control: Control, node_id: String, field: String) -> void:
+	var before := str(control.get_meta("edit_before", control.text))
+	var after: String = control.text
+	if after == before:
+		return
+	_run_action("Edit dialogue %s" % field,
+		"_ur_set_field", {"node_id": node_id, "field": field, "value": after},
+		"_ur_set_field", {"node_id": node_id, "field": field, "value": before})
+
+
+## Commits a node rename (with link retargeting) as one undoable action.
+## Invalid/duplicate ids are rejected and the field reverts.
+func _commit_rename(edit: LineEdit, node_id: String) -> void:
+	var before := str(edit.get_meta("edit_before", node_id))
+	var after := edit.text.strip_edges()
+	if after == before:
+		edit.text = before  # normalize any stray whitespace
+		return
+	if not GraphModel.is_valid_id(after) or (_dialogue != null and _dialogue.has_node_id(after)):
+		_set_status("cannot rename '%s' → '%s' (invalid id or already in use)" % [before, after], true)
+		edit.text = before
+		return
+	_run_action("Rename dialogue node",
+		"_ur_rename", {"from": before, "to": after},
+		"_ur_rename", {"from": after, "to": before})
+	_set_status("renamed '%s' → '%s'" % [before, after])
 
 
 func _refresh_connections() -> void:
@@ -353,16 +426,17 @@ func _ellipsis(text: String, max_length: int) -> String:
 	return single_line.substr(0, maxi(max_length - 1, 1)) + "…"
 
 
-func _header_text(node: NarrativeDialogueNode) -> String:
-	var speaker := node.speaker_id if node.speaker_id != "" else "(narrator)"
+## Badges that flag fields edited only via the Inspector (conditions/actions/
+## sequencer). Refreshed on rebuild — i.e. after Refresh or re-opening the tab.
+func _badge_text(node: NarrativeDialogueNode) -> String:
 	var badges := ""
 	if node.conditions.strip_edges() != "":
-		badges += " ❓"
+		badges += "❓"
 	if node.actions.strip_edges() != "":
-		badges += " ⚡"
+		badges += "⚡"
 	if node.sequencer_commands.strip_edges() != "":
-		badges += " 🎬"
-	return speaker + badges
+		badges += "🎬"
+	return badges
 
 
 # --- gesture handlers (also called directly by tests) ---
@@ -538,6 +612,38 @@ func _ur_positions(payload: Dictionary) -> void:
 		var gname: String = _id_to_gname.get(str(node_id), "")
 		if gname != "" and _graph.has_node(NodePath(gname)):
 			(_graph.get_node(NodePath(gname)) as GraphNode).position_offset = payload.map[node_id]
+	_mark_dirty()
+
+
+## Sets a node's text/speaker and syncs the on-screen field (no full rebuild —
+## a rebuild here would destroy whatever field the user clicked into next).
+func _ur_set_field(payload: Dictionary) -> void:
+	var node := _dialogue.get_node_by_id(str(payload.node_id))
+	if node == null:
+		return
+	var field := str(payload.field)
+	var value := str(payload.value)
+	if field == "speaker":
+		node.speaker_id = value
+	elif field == "text":
+		node.text = value
+	var gname: String = _id_to_gname.get(str(payload.node_id), "")
+	if gname != "" and _graph.has_node(NodePath(gname)):
+		var gnode := _graph.get_node(NodePath(gname)) as GraphNode
+		var key := "speaker_edit" if field == "speaker" else "text_edit"
+		if gnode.has_meta(key):
+			var control: Control = gnode.get_meta(key)
+			if is_instance_valid(control) and control.text != value:
+				control.text = value
+	_mark_dirty()
+
+
+func _ur_rename(payload: Dictionary) -> void:
+	var result := GraphModel.rename_node(_dialogue, str(payload.from), str(payload.to))
+	if not bool(result.renamed):
+		_set_status("rename failed: %s" % str(result.error), true)
+		return
+	_rebuild()
 	_mark_dirty()
 
 

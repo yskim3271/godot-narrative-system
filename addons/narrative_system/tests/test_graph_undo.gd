@@ -139,6 +139,67 @@ func test_move_undo_restores_positions() -> void:
 	assert_eq(gnode.position_offset, original, "canvas position restored")
 
 
+func _control(node_id: String, key: String) -> Control:
+	var gname := String(editor.graph_name_for(node_id))
+	var gnode := editor.get_graph_edit().get_node(NodePath(gname)) as GraphNode
+	return gnode.get_meta(key) if gnode != null and gnode.has_meta(key) else null
+
+
+func test_inline_text_and_speaker_edit_undo_redo() -> void:
+	var text_ctrl := _control("good", "text_edit")
+	text_ctrl.set_meta("edit_before", "good end")
+	text_ctrl.text = "a better ending"
+	editor._commit_field(text_ctrl, "good", "text")
+	assert_eq(branch.get_node_by_id("good").text, "a better ending")
+	undo.undo_last()
+	assert_eq(branch.get_node_by_id("good").text, "good end", "text edit undone")
+	assert_eq(text_ctrl.text, "good end", "on-screen field synced to the undone value")
+	undo.redo_last()
+	assert_eq(branch.get_node_by_id("good").text, "a better ending", "redo reapplies")
+	# speaker edit, separate action
+	var sp_ctrl := _control("good", "speaker_edit")
+	sp_ctrl.set_meta("edit_before", sp_ctrl.text)
+	sp_ctrl.text = "narrator"
+	editor._commit_field(sp_ctrl, "good", "speaker")
+	assert_eq(branch.get_node_by_id("good").speaker_id, "narrator")
+	undo.undo_last()
+	assert_eq(branch.get_node_by_id("good").speaker_id, "guard", "speaker edit undone")
+
+
+func test_inline_edit_to_same_value_creates_no_action() -> void:
+	var text_ctrl := _control("good", "text_edit")
+	text_ctrl.set_meta("edit_before", "good end")
+	text_ctrl.text = "good end"  # unchanged
+	editor._commit_field(text_ctrl, "good", "text")
+	assert_eq(undo.actions.size(), 0, "no-op edit pollutes no history")
+
+
+func test_rename_node_undo_redo_retargets_links() -> void:
+	var id_ctrl := _control("good", "id_edit")
+	id_ctrl.set_meta("edit_before", "good")
+	id_ctrl.text = "good_end"
+	editor._commit_rename(id_ctrl, "good")
+	assert_true(branch.has_node_id("good_end"))
+	assert_false(branch.has_node_id("good"))
+	assert_eq(branch.get_node_by_id("q").choices[0].target_node_id, "good_end", "link retargeted")
+	assert_not_null(editor.get_graph_edit().get_node(NodePath(String(editor.graph_name_for("good_end")))), "canvas node remapped to new id")
+	undo.undo_last()
+	assert_true(branch.has_node_id("good"), "rename undone")
+	assert_eq(branch.get_node_by_id("q").choices[0].target_node_id, "good", "link restored")
+	undo.redo_last()
+	assert_true(branch.has_node_id("good_end"), "redo renames again")
+
+
+func test_rename_to_duplicate_is_rejected() -> void:
+	var id_ctrl := _control("good", "id_edit")
+	id_ctrl.set_meta("edit_before", "good")
+	id_ctrl.text = "rich"  # already a node id
+	editor._commit_rename(id_ctrl, "good")
+	assert_eq(undo.actions.size(), 0, "rejected rename creates no action")
+	assert_eq(id_ctrl.text, "good", "field reverts to the original id")
+	assert_true(branch.has_node_id("good"), "node keeps its id")
+
+
 func test_noop_gestures_create_no_actions() -> void:
 	# connecting to the same target, disconnecting an empty port, re-setting
 	# the same start node: no history pollution

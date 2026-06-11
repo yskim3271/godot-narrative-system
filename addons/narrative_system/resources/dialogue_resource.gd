@@ -34,6 +34,13 @@ func has_node_id(node_id: String) -> bool:
 	return _node_index.has(node_id)
 
 
+## Forces the id index to rebuild on the next lookup. The size-based
+## auto-rebuild misses an in-place id change (rename), so editor tooling that
+## renames a node must call this afterwards.
+func invalidate_index() -> void:
+	_indexed_count = -1
+
+
 func _ensure_index() -> void:
 	if _indexed_count == nodes.size():
 		return

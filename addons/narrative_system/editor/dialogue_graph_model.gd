@@ -93,6 +93,50 @@ static func delete_node(dialogue: NarrativeDialogue, node_id: String) -> Diction
 	return report
 
 
+## Renames a node's id and retargets every link that pointed at the old id
+## (next_node_id, choice.target_node_id, and start_node_id). Returns
+## {renamed: bool, retargeted: int, error: String} — error is "" on success,
+## "" with renamed=false for an unchanged id (no-op).
+##
+## Symmetric: rename(old -> new) is undone by rename(new -> old), which the
+## editor relies on for undo/redo. (The one asymmetric case is renaming to an
+## id that a *dangling* link already references — vanishingly rare, and the
+## validator surfaces dangling links anyway.)
+static func rename_node(dialogue: NarrativeDialogue, old_id: String, new_id: String) -> Dictionary:
+	var result := {"renamed": false, "retargeted": 0, "error": ""}
+	if old_id == new_id:
+		return result
+	if not is_valid_id(new_id):
+		result.error = "invalid id '%s'" % new_id
+		return result
+	var node := dialogue.get_node_by_id(old_id)
+	if node == null:
+		result.error = "unknown node '%s'" % old_id
+		return result
+	if dialogue.has_node_id(new_id):
+		result.error = "id '%s' already exists" % new_id
+		return result
+	node.id = new_id
+	dialogue.invalidate_index()  # in-place id change; size-based rebuild misses it
+	var retargeted := 0
+	for other in dialogue.nodes:
+		if other == null:
+			continue
+		if other.next_node_id == old_id:
+			other.next_node_id = new_id
+			retargeted += 1
+		for choice in other.choices:
+			if choice != null and choice.target_node_id == old_id:
+				choice.target_node_id = new_id
+				retargeted += 1
+	if dialogue.start_node_id == old_id:
+		dialogue.start_node_id = new_id
+		retargeted += 1
+	result.renamed = true
+	result.retargeted = retargeted
+	return result
+
+
 ## Creates a dialogue with one start node and appends it to the database.
 static func create_dialogue(db: NarrativeDatabase, dialogue_id := "") -> NarrativeDialogue:
 	var id := dialogue_id if dialogue_id != "" else generate_dialogue_id(db)

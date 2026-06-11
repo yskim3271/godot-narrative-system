@@ -99,6 +99,22 @@ func test_end_node_move_persists_positions() -> void:
 	assert_eq(GraphModel.get_position(db.get_dialogue("branch").get_node_by_id("rich")), Vector2(777, 333))
 
 
+func test_inline_controls_present_and_direct_rename() -> void:
+	# No undo manager is injected here, so edits apply directly — the standalone
+	# path must still mutate the model (and retarget links on rename).
+	var gnode := _gnode("good")
+	assert_true(gnode.has_meta("speaker_edit"), "speaker is inline-editable")
+	assert_true(gnode.has_meta("text_edit"), "text is inline-editable")
+	assert_true(gnode.has_meta("id_edit"), "id is inline-editable (rename)")
+	var id_ctrl: LineEdit = gnode.get_meta("id_edit")
+	id_ctrl.set_meta("edit_before", "good")
+	id_ctrl.text = "ending"
+	editor._commit_rename(id_ctrl, "good")
+	assert_true(db.get_dialogue("branch").has_node_id("ending"))
+	assert_eq(db.get_dialogue("branch").get_node_by_id("q").choices[0].target_node_id, "ending",
+		"link retargeted even without an undo manager")
+
+
 func test_fills_container_parent_so_graph_gets_height() -> void:
 	# The editor main screen is a Container that ignores anchors and sizes
 	# children by size flags. A fresh editor must EXPAND_FILL, otherwise it

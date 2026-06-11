@@ -66,6 +66,48 @@ func test_delete_cleans_next_references() -> void:
 	assert_eq(linear.get_node_by_id("n1").next_node_id, "")
 
 
+func test_rename_node_retargets_choices_and_start() -> void:
+	# branch: start=q; q.choices stay->good, bribe->rich, secret->hidden_path
+	var r := GraphModel.rename_node(branch, "good", "good_end")
+	assert_true(bool(r.renamed))
+	assert_eq(str(r.error), "")
+	assert_eq(int(r.retargeted), 1, "stay choice retargeted")
+	assert_true(branch.has_node_id("good_end"))
+	assert_false(branch.has_node_id("good"))
+	assert_eq(branch.get_node_by_id("q").choices[0].target_node_id, "good_end")
+	# renaming the start node moves start_node_id too
+	var r2 := GraphModel.rename_node(branch, "q", "intro")
+	assert_eq(branch.start_node_id, "intro")
+	assert_eq(int(r2.retargeted), 1, "start_node_id retargeted")
+
+
+func test_rename_node_retargets_next_links() -> void:
+	var linear := db.get_dialogue("linear")  # n1 -> n2 -> n3
+	var r := GraphModel.rename_node(linear, "n2", "middle")
+	assert_true(bool(r.renamed))
+	assert_eq(int(r.retargeted), 1, "n1.next retargeted")
+	assert_eq(linear.get_node_by_id("n1").next_node_id, "middle")
+	assert_eq(linear.get_node_by_id("middle").next_node_id, "n3", "renamed node keeps its own outgoing link")
+
+
+func test_rename_node_rejections_and_noop() -> void:
+	assert_false(bool(GraphModel.rename_node(branch, "q", "q").renamed), "same id is a no-op")
+	assert_eq(str(GraphModel.rename_node(branch, "q", "good").error).is_empty(), false, "duplicate id rejected")
+	assert_eq(branch.get_node_by_id("q").id, "q", "rejected rename leaves id untouched")
+	assert_false(bool(GraphModel.rename_node(branch, "q", "bad id!").renamed), "invalid charset rejected")
+	assert_false(bool(GraphModel.rename_node(branch, "ghost", "x").renamed), "unknown node rejected")
+
+
+func test_rename_node_is_undo_symmetric() -> void:
+	# the editor undoes a rename by renaming back; verify it restores exactly
+	GraphModel.rename_node(branch, "q", "intro")
+	GraphModel.rename_node(branch, "intro", "q")
+	assert_eq(branch.start_node_id, "q")
+	assert_true(branch.has_node_id("q"))
+	assert_false(branch.has_node_id("intro"))
+	assert_eq(branch.get_node_by_id("q").choices[0].target_node_id, "good", "choice link restored")
+
+
 func test_set_next_and_disconnect() -> void:
 	assert_true(GraphModel.set_next(branch, "good", "rich"))
 	assert_eq(branch.get_node_by_id("good").next_node_id, "rich")
