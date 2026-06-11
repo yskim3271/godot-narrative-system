@@ -1,11 +1,11 @@
-# 알려진 한계 (0.1.0 MVP)
+# 알려진 한계 (1.0.0)
 
 의도적 범위 제한(로드맵 항목)과 동작상 제약을 구분해 정리합니다.
 
 ## 저작 도구
-- **노드 그래프 에디터(0.2.0-dev)**: 보기/추가/연결/삭제/시작 지정/배치 저장 지원. 한계 — **undo/redo 없음**, 필드 편집은 Inspector 경유, Inspector에서의 구조 변경은 Refresh 필요, 노드 id rename 시 링크 자동 추적 없음(Validate로 확인). 상세: [graph_editor.md](graph_editor.md).
-- 텍스트 스크립트 포맷(.dialogue류) 파서 없음 — 대량 저작은 `db_builder.gd` 코드 패턴 권장.
-- 에디터 플러그인 활성화 토글(`_enable_plugin`) 경로는 headless 자동화가 불가능해 수동 확인 대상입니다 (패널·그래프 탭·런타임·CLI는 자동 검증됨).
+- **노드 그래프 에디터**: 보기/추가/연결/삭제/시작 지정/배치 저장 + 구조 변경 undo/redo 지원. 한계 — 필드 편집은 Inspector 경유(인라인 편집은 로드맵), Inspector에서의 구조 변경은 Refresh 필요, 노드 id rename 시 링크 자동 추적 없음(Validate로 확인). 상세: [graph_editor.md](graph_editor.md).
+- **.ndlg 텍스트 포맷**은 대화 전용 — 캐릭터/퀘스트/변수/번역 테이블은 코드·Inspector로 저작 ([text_script.md](text_script.md)). 텍스트 임포트로 기존 대화를 교체하면 그래프 배치가 초기화됩니다(자동 배치로 복구).
+- 에디터 플러그인 활성화 토글(`_enable_plugin`) 경로는 headless 자동화가 불가능해 수동 확인 대상입니다 (패널·그래프 탭·런타임·CLI·데모 부팅은 자동 검증됨).
 
 ## 대화 런타임
 - **동시 대화 1개** — 실행 중 `start_dialogue()`는 거부됩니다. 인터럽트/스택은 미지원.
@@ -35,6 +35,5 @@
 
 ## 기타
 - C# 전용 래퍼 API 없음 (GDScript API를 C#에서 호출하는 것은 가능).
-- Yarn/Ink/articy 임포터 없음.
-- 데모는 통합형 1개 (4분할 데모는 M2).
+- Yarn/Ink/articy 임포터 없음 (.ndlg 텍스트 포맷이 자체 저작 경로).
 - 멀티플레이어 동기화 미고려.

@@ -43,9 +43,17 @@ Narrative.quest_updated.connect(func(id): print("quest: ", id))
 
 자세한 설치·첫 대화 만들기: **[docs/getting_started.md](docs/getting_started.md)**
 
-## 데모
+## 데모 (5종)
 
-프로젝트를 Godot로 열고 ▶ 실행 — [examples/integrated_demo](examples/integrated_demo/README.md)가 모든 기능(분기 대화, 조건부 선택지, 퀘스트+트래커, 저장/불러오기, 한/영 전환, bark, 컷신)을 한 씬에서 시연합니다.
+프로젝트를 Godot로 열고 ▶ 실행 — 기본 실행은 [integrated_demo](examples/integrated_demo/README.md)(전 기능 통합)입니다. 주제별 데모는 해당 씬을 열어 실행하세요:
+
+| 데모 | 주제 |
+|---|---|
+| [basic_dialogue_demo](examples/basic_dialogue_demo/README.md) | 최소 구성 — 코드 DB + 선형 대화 |
+| [branching_choice_demo](examples/branching_choice_demo/README.md) | 선택지/조건/비활성 + **.ndlg 텍스트 저작** |
+| [quest_demo](examples/quest_demo/README.md) | 퀘스트 수주→진행→완료 사이클 + 로그/트래커 |
+| [localization_cutscene_demo](examples/localization_cutscene_demo/README.md) | 한/영 런타임 전환 + 시퀀서 컷신 + bark |
+| [integrated_demo](examples/integrated_demo/README.md) | 전 기능 통합 (저장/불러오기 포함) |
 
 ## 문서
 
@@ -53,7 +61,8 @@ Narrative.quest_updated.connect(func(id): print("quest: ", id))
 |---|---|
 | [getting_started.md](docs/getting_started.md) | 설치(플러그인/수동 autoload), 10분 만에 첫 대화 |
 | [dialogue_authoring.md](docs/dialogue_authoring.md) | Inspector 저작 워크플로, 분기 패턴, 함정 |
-| [graph_editor.md](docs/graph_editor.md) | **노드 그래프 에디터** (메인 스크린 Narrative 탭) |
+| [graph_editor.md](docs/graph_editor.md) | **노드 그래프 에디터** (메인 스크린 Narrative 탭, undo/redo) |
+| [text_script.md](docs/text_script.md) | **.ndlg 텍스트 대화 저작 포맷** (임포트/익스포트) |
 | [dsl.md](docs/dsl.md) | 조건/액션 미니 언어 문법·의미론 |
 | [quest_system.md](docs/quest_system.md) | 퀘스트 상태·objective·보상·UI |
 | [save_load.md](docs/save_load.md) · [save_format.md](docs/save_format.md) | 사용법 · JSON 스키마/마이그레이션 |

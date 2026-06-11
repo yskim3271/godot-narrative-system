@@ -1,10 +1,10 @@
 # 로드맵
 
-## M2 — 저작 경험 (진행 중)
+## M2 — 저작 경험
 
-1. ~~**GraphEdit 기반 대화 그래프 에디터** (보기/노드 추가/연결/시작 노드 지정)~~ ✅ 0.2.0-dev 완료 — 후속: **undo/redo(EditorUndoRedoManager)**, 텍스트/화자 인라인 편집, 노드 id rename 시 링크 자동 추적, 미니맵
+1. ~~GraphEdit 기반 대화 그래프 에디터~~ ✅ — ~~구조 변경 undo/redo~~ ✅ 1.0.0. 후속: 텍스트/화자 인라인 편집, 노드 id rename 시 링크 자동 추적, 미니맵
 2. 하단 패널 고도화: 대화 미리보기(에디터 내 재생), 누락 번역 일괄 표시, 검증 이슈 더블클릭 → 해당 리소스 포커스
-3. 텍스트 저작 포맷(.ndlg) 파서 — `dialogue_script_parser.gd` (작가 친화 워크플로)
+3. ~~텍스트 저작 포맷(.ndlg) 파서~~ ✅ 1.0.0 (`dialogue_script_parser.gd`, 원자적 임포트+왕복 익스포트, 패널 버튼)
 4. 인라인 마크업: `[var=x]`, `[color]` 헬퍼, 자동 넘버링 단축키
 
 ## M3 — 런타임 고도화
@@ -19,7 +19,7 @@
 1. Yarn Spinner / Ink 임포터 (NarrativeDatabase로 변환)
 2. CSV로 대화 본문 왕복(현재는 로컬라이징 테이블만)
 3. C# 우선 API 래퍼 + 예제
-4. 데모 4분할(basic/quest/localization/cutscene) + Godot Asset Library 패키징(버전 태그, export-ignore)
+4. ~~데모 4분할(basic/quest/localization/cutscene)~~ ✅ 1.0.0 — 잔여: Godot Asset Library 패키징(버전 태그, export-ignore)
 
 ## 항시 항목
 

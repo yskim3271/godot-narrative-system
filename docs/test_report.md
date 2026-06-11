@@ -1,17 +1,17 @@
-# 테스트 결과 보고서 (0.2.0-dev)
+# 테스트 결과 보고서 (1.0.0)
 
 검증 환경: Godot 4.6.3-stable (win64 console 빌드), Windows 11 · 2026-06-11
 
-## 최종 결과
+## 최종 결과 (`.\scripts\run_tests.ps1` 5단계 집계)
 
 | 단계 | 내용 | 결과 |
 |---|---|---|
 | 1 | `--import` (클래스 캐시/에셋) | ✅ exit 0 |
-| 2 | 유닛/통합 테스트 (17 파일) | ✅ **157/157 PASS**, ~4.7s, SCRIPT ERROR 0 |
+| 2 | 유닛/통합 테스트 (19 파일) | ✅ **174/174 PASS**, ~5.0s, SCRIPT ERROR 0 |
 | 3 | 해피패스 순수성 게이트 (통합 플로우 출력에 엔진 ERROR/WARNING 0) | ✅ clean |
 | 4 | 데모 DB 정적 검증 (`validate_cli --strict`) | ✅ 0 error / 0 warning |
+| 5 | **데모 씬 5종 headless 부팅** (30프레임, SCRIPT ERROR 0) | ✅ 5/5 |
 | 부가 | 에디터 headless 스모크 (`--headless --editor --quit`) | ✅ exit 0, 에러 0 |
-| 부가 | 데모 씬 headless 부팅 60프레임 | ✅ exit 0, 에러 0 |
 
 재현: `.\scripts\run_tests.ps1` (전체 4단계 집계 exit code)
 
@@ -36,6 +36,8 @@
 | test_integration_flow | 1 | 종단: 수주→중간 저장→새 컨텍스트 로드→재개→완료→언어→왕복 |
 | test_graph_model | 12 | 그래프 편집 모델: 추가/삭제(참조 정리)/연결/시작/자동 배치/.tres 위치 왕복 |
 | test_graph_editor_ui | 8 | GraphEdit 셸: 포트 배선·연결/해제/삭제 제스처·시작 표시·위치 영속 |
+| test_graph_undo | 6 | undo/redo: 추가·삭제(링크/시작 복원)·연결 재배선·이동, 무변화 제스처 무기록 |
+| test_script_parser | 11 | .ndlg: 문법 전체·부착 규칙·줄 번호 에러·원자적 임포트·교체/스킵·**왕복**·런타임 재생 |
 
 ## 스펙 §12 검증 기준 대응
 

@@ -1,6 +1,19 @@
 # Changelog
 
-## 0.2.0-dev (미출시)
+## 1.0.0 (2026-06-11) — 개발 완료
+
+원 스펙의 필수 기능 20종 전부 구현·검증 완료. (의도적 유예: Yarn/Ink 임포터, C# 전용 API, `@time` 병렬 시퀀서, 에셋 라이브러리 패키징 — roadmap.md)
+
+### 추가
+- **그래프 에디터 undo/redo**: 노드 추가/삭제(링크·시작 노드 완전 복원)/연결·재배선·해제/시작 지정/이동 전부 에디터 히스토리(Ctrl+Z) 통합. 무변화 제스처는 히스토리 미오염.
+- **텍스트 대화 저작 포맷(.ndlg)**: 라인 기반 작가 친화 문법, 줄 번호 에러 보고, **원자적 임포트**(에러 시 DB 무변경), 제자리 교체/건너뛰기, **왕복 익스포트**(출하 데모 대화로 검증), 패널 Import Script 버튼.
+- **샘플 4종 추가** (각 README 포함): basic_dialogue(최소 구성) / branching_choice(**.ndlg로 저작**) / quest(수주→진행→완료) / localization_cutscene(한영 전환+컷신+bark). 통합 데모 포함 총 5종, 전부 파이프라인에서 headless 부팅 검증.
+
+### 수정
+- `load_database()`가 액터 레지스트리를 새 컨텍스트로 이월 (씬 `_ready`에서 DB를 교체해도 NarrativeActor 등록 유지)
+- `NarrativeDatabase.invalidate_indexes()` — 제자리 교체 시 스테일 id 인덱스 문제
+
+## 0.2.0-dev
 
 ### 추가
 - **대화 그래프 에디터** (메인 스크린 "Narrative" 탭): 노드 시각화(화자/배지/선택지별 출력 포트), 드래그 연결/해제(next·choice), 우클릭 노드 추가, Del 삭제(참조 자동 정리), 시작 노드 지정, BFS 자동 배치, 위치 영속화(metadata), 새 대화 생성, 저장/검증 버튼. 로직은 `dialogue_graph_model.gd`로 분리되어 headless 테스트 20종으로 고정.
