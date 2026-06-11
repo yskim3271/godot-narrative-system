@@ -1,4 +1,4 @@
-# 테스트 결과 보고서 (1.1.0 + M2-2·M3-2 진행분)
+# 테스트 결과 보고서 (1.2.0)
 
 검증 환경: Godot 4.6.3-stable (win64 console 빌드), Windows 11 · 2026-06-11
 
@@ -7,7 +7,7 @@
 | 단계 | 내용 | 결과 |
 |---|---|---|
 | 1 | `--import` (클래스 캐시/에셋) | ✅ exit 0 |
-| 2 | 유닛/통합 테스트 (23 파일) | ✅ **248/248 PASS**, ~7.6s, SCRIPT ERROR 0 |
+| 2 | 유닛/통합 테스트 (23 파일) | ✅ **252/252 PASS**, ~7.6s, SCRIPT ERROR 0 |
 | 3 | 해피패스 순수성 게이트 (통합 플로우 출력에 엔진 ERROR/WARNING 0) | ✅ clean |
 | 4 | 데모 DB 정적 검증 (`validate_cli --strict`) | ✅ 0 error / 0 warning |
 | 5 | **데모 씬 5종 headless 부팅** (30프레임, SCRIPT ERROR 0) | ✅ 5/5 |
@@ -26,7 +26,7 @@
 | test_dialogue_runner | 16 | 분기·스킵·홉 가드·재진입 큐·숨김/비활성·seen·미지 id |
 | test_markup | 6 | `[var=x]` 치환 규칙(미지/기형 원문 유지·재귀 없음)·러너 대사/선택지·바크/알림 |
 | test_quest_manager | 19 | 전이·선행조건·클램프·보상 체인·**리소스 불변성**·**abandon(이력 보존)·반복 퀘스트(완료 횟수)·objective 자동 완료 조건(+시그널)·카테고리·DSL abandon/times_completed** |
-| test_quest_ui | 5 | 트래커/로그/알림 큐 + 파사드 |
+| test_quest_ui | 8 | 트래커/로그/알림 큐 + 파사드 + **Abandon 버튼(동작/숨김 옵션)·반복 완료 ×N 배지** |
 | test_ui_basic | 5 | 대화창/선택지 UI 헤드리스 |
 | test_save_load | 15 | 왕복·재개(액션 미재실행)·격리·버전·마이그레이션·원자성·결정성·**v1→v2 마이그레이션(completions 백필)·abandoned-inactive 왕복·음수 클램프** |
 | test_save_hardening | 6 | 적대적 데이터(타입 오염/잘림/재클램프/레거시) |
@@ -39,7 +39,7 @@
 | test_graph_editor_ui | 14 | GraphEdit 셸: 포트 배선·연결/해제/삭제 제스처·시작 표시·위치 영속·**Container 부모 채움(EXPAND_FILL 회귀)**·선택지 인라인 칸·마크업 삽입·**focus_node(전환/단일 선택/중앙 정렬)** |
 | test_graph_undo | 14 | undo/redo: 추가·삭제(링크/시작 복원)·연결 재배선·이동·인라인 편집(텍스트/화자/선택지)·rename·자동 넘버링, 무변화 제스처 무기록 |
 | test_script_parser | 11 | .ndlg: 문법 전체·부착 규칙·줄 번호 에러·원자적 임포트·교체/스킵·**왕복**·런타임 재생 |
-| test_preview_panel | 10 | 에디터 미리보기: 샌드박스 재생/진행/종료·선택지 버튼(비활성)·액션 실행·언어 전환 재표현·시퀀스 미실행·퀘스트/상태 트리·재시작 초기화·리소스 불변 |
+| test_preview_panel | 11 | 에디터 미리보기: 샌드박스 재생/진행/종료·선택지 버튼(비활성)·액션 실행·언어 전환 재표현·시퀀스 미실행·퀘스트/상태 트리·objective 완료 🎯 로그·재시작 초기화·리소스 불변 |
 | test_localization_report | 7 | 번역 커버리지: 로케일 수집·기본 언어 인라인 커버·명시/컨벤션 키·캐릭터/퀘스트/objective 단위·키 전용 단위·미저작 스킵·ref 해석 |
 | test_bottom_panel | 3 | 패널 배선: 검증 더블클릭→ref·Localization 필터/활성화·focus_reference→그래프 점프 |
 
@@ -79,9 +79,10 @@ headless로 검증 불가능한 경로를 에디터를 직접 띄워 확인. 결
 4. **선택지 자동 넘버링**: 노드 선택 → 툴바 1.2.3 → `1. ~ 5. ` 접두 적용(칸 동기), Ctrl+Shift+N → 토글 해제. ✅
 5. 데모 DB는 저장하지 않음(git 무변경 확인). 1.1.0의 시퀀서 병렬/3D는 런타임 전용이라 headless 테스트로 충분(에디터 GUI 경로 없음).
 
-## M2-2·M3-2 추가분 (2026-06-11, 1.1.0 이후 main)
+## M2-2·M3-2 추가분 (2026-06-11, 1.2.0)
 
-- 테스트 212 → **248** (+25 M2-2 하단 패널, +11 M3-2 퀘스트). 5단계 파이프라인 ALL GREEN.
+- 테스트 212 → **252** (+25 M2-2 하단 패널, +11 M3-2 퀘스트, +4 제출 전 감사 수정분). 5단계 파이프라인 ALL GREEN.
+- 제출 전 전수 감사(4개 관점, 실결함 3건 수정·주장 11건 기각): [pre_submission_audit_report.md](reports/pre_submission_audit_report.md)
 - M3-2(런타임 전용)는 headless 테스트로 충분 — 에디터 GUI 경로 없음.
 - 에디터 headless 부팅 스모크(`--editor --headless --quit-after 120`): exit 0, SCRIPT ERROR 0.
 

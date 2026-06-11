@@ -171,7 +171,8 @@ func _import_csv() -> void:
 			" (saved)" if save_err == OK and _db.resource_path != "" else "",
 		], false)
 		_overview.show_database(_db)
-		_localization.show_database(_db))
+		_localization.show_database(_db)
+		_preview.set_database(_db))  # imported locales must reach the language picker
 	dialog.popup_centered_ratio(0.5)
 
 

@@ -137,6 +137,7 @@ func start_preview(dialogue_id := "") -> bool:
 	_ctx.runner.dialogue_ended.connect(_on_dialogue_ended)
 	_ctx.runner.expression_changed.connect(_on_expression_changed)
 	_ctx.quests.quest_updated.connect(_on_quest_updated)
+	_ctx.quests.objective_completed.connect(_on_objective_completed)
 	_ctx.state.variable_changed.connect(_on_variable_changed)
 	_ctx.alert_requested.connect(_on_alert)
 
@@ -256,6 +257,10 @@ func _on_quest_updated(quest_id: String) -> void:
 		return
 	_append("📜 quest '%s' → %s" % [_escape(quest_id), _ctx.quests.get_quest_state(quest_id)], LOG_DIM)
 	_refresh_state_tree()
+
+
+func _on_objective_completed(quest_id: String, objective_id: String) -> void:
+	_append("🎯 objective '%s / %s' completed" % [_escape(quest_id), _escape(objective_id)], LOG_DIM)
 
 
 func _on_alert(text: String) -> void:

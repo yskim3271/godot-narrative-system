@@ -79,7 +79,7 @@ times_completed("daily_run") < 3
 
 | 씬 | 역할 | 사용법 |
 |---|---|---|
-| `ui/quest_log.tscn` | 진행 중(목표·트래커 토글)/완료/실패 목록 | 씬에 추가 후 `toggle()` 호출 (또는 `toggle_action` 지정) |
+| `ui/quest_log.tscn` | 진행 중(목표·트래커 토글·**Abandon 버튼**)/완료/실패 목록, 반복 완료는 **×N 배지** | 씬에 추가 후 `toggle()` 호출 (또는 `toggle_action` 지정). Abandon 버튼은 `show_abandon_button = false`로 숨김 (문구 키: `ui.quest_log.abandon`) |
 | `ui/quest_tracker.tscn` | 추적 중 퀘스트 HUD (비면 자동 숨김) | 씬에 추가만 하면 됨 |
 
 - `auto_track = true`(기본)인 퀘스트는 시작 시 트래커에 표시, 로그의 체크박스로 토글

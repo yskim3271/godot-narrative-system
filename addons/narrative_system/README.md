@@ -20,11 +20,18 @@ the position "Dialogue System for Unity" holds, natively in Godot.
 - **Graph editor**: a "Narrative" main-screen tab — node canvas with inline
   editing (text, speaker, node id rename with automatic link retargeting,
   choice text/target), full undo/redo, validation, auto-layout.
+- **Bottom panel tooling**: database overview, validation with
+  double-click-to-focus (jumps the graph to the offending node and opens it
+  in the Inspector), a per-locale translation coverage report, and an
+  in-editor dialogue **preview** (sandboxed playback with live state view —
+  resources are never touched).
 - **Text authoring format (.ndlg)**: writer-friendly line-based scripts with
   atomic import and round-trip export. Plus inline `[var=x]` markup with
   editor shortcuts, and BBCode pass-through.
-- **Quests**: prerequisites, objectives with clamped progress, reward actions,
-  quest log + tracker reference UI, dialogue-action integration.
+- **Quests**: prerequisites, objectives with clamped progress and
+  auto-complete conditions, reward actions, abandon & repeatable quests with
+  completion tracking, categories, quest log + tracker reference UI,
+  dialogue-action integration.
 - **Sequencer (cutscenes)**: runs alongside dialogue lines, cancellable by
   input. Sequential lines plus Unity-DS-style parallel scheduling:
   `cmd() @ 1.5`, `cmd() @ message("ready")`, `cmd() -> "done"`. 16 built-in

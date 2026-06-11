@@ -1,7 +1,8 @@
 extends CanvasLayer
-## Quest log window: active quests with objectives and tracker toggles,
-## plus completed and failed sections. Toggle visibility from game code
-## (call toggle()) or set toggle_action to an input action name.
+## Quest log window: active quests with objectives, tracker toggles and an
+## optional Abandon button, plus completed and failed sections (repeat
+## completions show as "×N"). Toggle visibility from game code (call
+## toggle()) or set toggle_action to an input action name.
 ##
 ## Binds to the Narrative facade (autoload) or any facade-shaped object
 ## passed to setup(). Refreshes are deferred and batched so handlers that
@@ -9,6 +10,9 @@ extends CanvasLayer
 
 ## Optional input action that toggles the log (e.g. "quest_log").
 @export var toggle_action := ""
+## Show an Abandon button on active quests (calls abandon_quest(); hidden
+## automatically when the bound facade does not expose it).
+@export var show_abandon_button := true
 
 var _api: Object
 var _dirty := false
@@ -90,19 +94,42 @@ func _add_section(state: String, heading: String) -> void:
 			_add_active_quest(str(quest_id))
 		else:
 			var label := Label.new()
-			label.text = "    " + _api.get_quest_title(str(quest_id))
+			label.text = "    " + _title_with_completions(str(quest_id))
 			label.modulate = Color(1, 1, 1, 0.45) if state == "failed" else Color(1, 1, 1, 0.8)
 			_entries.add_child(label)
 
 
+## Quest title plus a "×N" repeat-completion badge (shown from the second
+## completion on, so one-shot quests stay clean).
+func _title_with_completions(quest_id: String) -> String:
+	var title: String = _api.get_quest_title(quest_id)
+	if _api.has_method("get_times_completed"):
+		var completions: int = _api.get_times_completed(quest_id)
+		if completions > 1:
+			title += " ×%d" % completions
+	return title
+
+
 func _add_active_quest(quest_id: String) -> void:
+	var row := HBoxContainer.new()
+	_entries.add_child(row)
+
 	var track := CheckBox.new()
-	track.text = _api.get_quest_title(quest_id)
+	track.text = _title_with_completions(quest_id)
 	track.button_pressed = _api.is_quest_tracked(quest_id)
 	track.tooltip_text = _api.get_ui_text("ui.quest_log.track", "Show in tracker")
+	track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	track.toggled.connect(func(pressed: bool) -> void:
 		_api.set_quest_tracked(quest_id, pressed))
-	_entries.add_child(track)
+	row.add_child(track)
+
+	if show_abandon_button and _api.has_method("abandon_quest"):
+		var abandon := Button.new()
+		abandon.text = _api.get_ui_text("ui.quest_log.abandon", "Abandon")
+		abandon.tooltip_text = _api.get_ui_text("ui.quest_log.abandon_tip", "Drop this quest (progress is lost)")
+		abandon.pressed.connect(func() -> void:
+			_api.abandon_quest(quest_id))
+		row.add_child(abandon)
 
 	var description: String = _api.get_quest_description(quest_id)
 	if description != "":

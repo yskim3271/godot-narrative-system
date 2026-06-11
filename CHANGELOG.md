@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 (2026-06-11)
+
+### 추가
+- **에디터 하단 패널 고도화 (M2-2)** — 탭 4종으로 확장:
+  - **Preview**: 에디터 안에서 대화 재생(샌드박스 컨텍스트 — 실행마다 fresh 상태, 리소스 불변). 로컬라이즈 화자·`[var=x]`/BBCode 렌더링·선택지 버튼(조건 비활성 포함)·퀘스트 📜/목표 🎯/알림 🔔 트랜스크립트·변수/퀘스트 라이브 상태 트리·실행 중 언어 전환. 시퀀서 줄은 실행하지 않고 🎬 로그로만 표시.
+  - **Localization**: 전 번역 단위(노드/선택지/캐릭터/퀘스트/objective)의 로케일별 누락 리포트(기본 언어는 인라인 텍스트로 커버 — `resolve()` 패리티), 로케일 필터.
+  - **이슈 더블클릭 → 포커스**: Validation/Localization 행 더블클릭 시 메인 스크린 그래프가 해당 노드를 선택+중앙 정렬하고 Inspector에 리소스를 엶 (`NarrativeValidator.parse_where()/resolve_reference()`, 그래프 `focus_node()`).
+- **퀘스트 고도화 (M3-2)**: `abandon_quest()`(active→inactive, 완료 이력 보존), **반복 퀘스트**(`repeatable` — completed/failed에서 재시작, 완료 횟수 누적, `get_times_completed()`), **objective 자동 완료 조건**(`auto_complete_condition` — 변수 변경 시 평가, `objective_completed` 시그널), **카테고리**(`category` + 조회 API). DSL `abandon_quest()`/`times_completed()` 추가.
+- **QuestLog UI**: 진행 중 퀘스트에 Abandon 버튼(`show_abandon_button`, 문구 키 `ui.quest_log.abandon`), 반복 완료 ×N 배지.
+- 런타임 코어 전체 `@tool` 전환(에디터 미리보기용 — 게임 동작 무영향).
+
+### 변경
+- **저장 스키마 v2** (`SAVE_VERSION = 2`): 퀘스트 항목에 `completions` 추가, abandon된 퀘스트의 `"state": "inactive"` 항목 허용. **v1 저장은 1→2 마이그레이션으로 자동 호환**(completions 백필). (docs/save_format.md)
+
 ## 1.1.0 (2026-06-11)
 
 ### 추가

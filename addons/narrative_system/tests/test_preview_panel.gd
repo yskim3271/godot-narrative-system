@@ -129,3 +129,10 @@ func test_preview_never_mutates_resources() -> void:
 	assert_eq(node.speaker_id, before.speaker)
 	assert_eq(node.choices.size(), before.choices)
 	assert_eq(db.get_dialogue("branch").get_node_by_id("q").choices[0].text, "choice stay")
+
+
+func test_objective_completed_logged() -> void:
+	panel.start_preview("questgiver")
+	panel.context().quests.update_objective("rats", "kill_rats", 5)
+	assert_contains(panel.log_text(), "objective 'rats / kill_rats' completed")
+	assert_contains(panel.log_text(), "🎯")

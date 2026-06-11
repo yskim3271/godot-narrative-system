@@ -102,3 +102,46 @@ func test_facade_quest_delegations() -> void:
 	assert_eq(facade.get_quests_in_state("active"), ["rats"] as Array[String])
 	assert_true(facade.set_quest_tracked("rats", false))
 	assert_eq(facade.get_tracked_quests(), [] as Array[String])
+
+
+func _find_button(root: Node, text: String) -> Button:
+	for child in root.get_children():
+		if child is Button and not (child is CheckBox) and str(child.text) == text:
+			return child
+		var nested := _find_button(child, text)
+		if nested != null:
+			return nested
+	return null
+
+
+func test_quest_log_abandon_button() -> void:
+	facade.start_quest("rats")
+	log_ui.toggle()
+	var entries: Node = log_ui.get_node("Panel/Margin/VBox/Scroll/Entries")
+	var abandon := _find_button(entries, "Abandon")
+	assert_not_null(abandon, "active quests get an Abandon button")
+	abandon.pressed.emit()
+	assert_eq(facade.get_quest_state("rats"), "inactive", "button abandons the quest")
+	await wait_frame()
+	assert_false(_all_label_text(entries).contains("Rat Hunt"), "abandoned quest leaves the log")
+
+
+func test_quest_log_abandon_button_can_be_hidden() -> void:
+	log_ui.show_abandon_button = false
+	facade.start_quest("rats")
+	log_ui.toggle()
+	assert_null(_find_button(log_ui.get_node("Panel/Margin/VBox/Scroll/Entries"), "Abandon"))
+
+
+func test_quest_log_completion_badge() -> void:
+	for i in 2:
+		facade.start_quest("daily")
+		facade.update_objective("daily", "win", 1)
+		facade.complete_quest("daily")
+	facade.start_quest("daily")
+	facade.start_quest("intro")
+	facade.complete_quest("intro")
+	log_ui.toggle()
+	var text := _all_label_text(log_ui.get_node("Panel/Margin/VBox/Scroll/Entries"))
+	assert_contains(text, "Daily Run ×2", "repeat completions show as a ×N badge")
+	assert_false(text.contains("Meet the Guard ×"), "single completions stay clean")
