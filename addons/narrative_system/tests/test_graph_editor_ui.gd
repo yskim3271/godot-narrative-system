@@ -91,6 +91,8 @@ func test_set_selection_as_start() -> void:
 
 
 func test_end_node_move_persists_positions() -> void:
+	# GraphEdit emits begin_node_move, the user drags, then end_node_move.
+	editor._on_begin_node_move()
 	var gnode := _gnode("rich")
 	gnode.position_offset = Vector2(777, 333)
 	editor._on_end_node_move()

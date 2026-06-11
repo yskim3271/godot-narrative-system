@@ -33,6 +33,10 @@ var _gname_to_id := {}
 var _id_to_gname := {}
 var _next_gname := 0
 var _popup_graph_pos := Vector2.ZERO
+## EditorUndoRedoManager injected by plugin.gd (null when headless/tests:
+## actions then execute directly with identical effects, no history).
+var _undo_redo: Object = null
+var _move_snapshot := {}
 
 var _graph: GraphEdit
 var _picker: OptionButton
@@ -51,6 +55,12 @@ func _init() -> void:
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		reload_database()
+
+
+## Accepts an EditorUndoRedoManager (or any object with the same
+## create_action/add_do_method/add_undo_method/commit_action surface).
+func set_undo_redo(manager: Object) -> void:
+	_undo_redo = manager
 
 
 # --- public API (used by plugin.gd and tests) ---
@@ -112,17 +122,17 @@ func graph_name_for(node_id: String) -> StringName:
 	return StringName(_id_to_gname.get(node_id, ""))
 
 
-## Adds a node at a canvas position and shows it.
+## Adds a node at a canvas position and shows it (undoable).
 func add_node_at(position: Vector2) -> NarrativeDialogueNode:
 	if _dialogue == null:
 		_set_status("open a dialogue first", true)
 		return null
-	var node := GraphModel.add_node(_dialogue, "", position)
-	if node == null:
-		return null
-	_spawn_graph_node(node)
-	_update_start_styling()
-	_mark_dirty()
+	var node := NarrativeDialogueNode.new()
+	node.id = GraphModel.generate_node_id(_dialogue)
+	GraphModel.set_position(node, position)
+	_run_action("Add dialogue node",
+		"_ur_add", {"node": node},
+		"_ur_unadd", {"node_id": node.id, "prev_start": _dialogue.start_node_id})
 	_set_status("added node '%s'" % node.id)
 	return node
 
@@ -142,10 +152,12 @@ func set_selection_as_start() -> void:
 		_set_status("select exactly one node to mark as start", true)
 		return
 	var node_id: String = _gname_to_id.get(str(selection[0]), "")
-	if node_id != "" and GraphModel.set_start(_dialogue, node_id):
-		_update_start_styling()
-		_mark_dirty()
-		_set_status("start node: '%s'" % node_id)
+	if node_id == "" or not _dialogue.has_node_id(node_id) or node_id == _dialogue.start_node_id:
+		return
+	_run_action("Set start node",
+		"_ur_start", {"node_id": node_id},
+		"_ur_start", {"node_id": _dialogue.start_node_id})
+	_set_status("start node: '%s'" % node_id)
 
 
 ## Persists node positions and writes the database resource to disk.
@@ -218,6 +230,7 @@ func _build_ui() -> void:
 	_graph.delete_nodes_request.connect(_on_delete_nodes_request)
 	_graph.popup_request.connect(_on_popup_request)
 	_graph.node_selected.connect(_on_node_selected)
+	_graph.begin_node_move.connect(_on_begin_node_move)
 	_graph.end_node_move.connect(_on_end_node_move)
 	vbox.add_child(_graph)
 
@@ -354,14 +367,14 @@ func _on_connection_request(from_name: StringName, from_port: int, to_name: Stri
 	var to_id: String = _gname_to_id.get(str(to_name), "")
 	if from_id == "" or to_id == "":
 		return
-	var ok := false
-	if from_port == 0:
-		ok = GraphModel.set_next(_dialogue, from_id, to_id)
-	else:
-		ok = GraphModel.set_choice_target(_dialogue, from_id, from_port - 1, to_id)
-	if ok:
-		_refresh_connections()
-		_mark_dirty()
+	if from_port > 0 and from_port - 1 >= _dialogue.get_node_by_id(from_id).choices.size():
+		return
+	var previous := _link_target(from_id, from_port)
+	if previous == to_id:
+		return
+	_run_action("Connect dialogue nodes",
+		"_ur_link", {"from_id": from_id, "port": from_port, "to_id": to_id},
+		"_ur_link", {"from_id": from_id, "port": from_port, "to_id": previous})
 
 
 func _on_disconnection_request(from_name: StringName, from_port: int, _to_name: StringName, _to_port: int) -> void:
@@ -370,33 +383,31 @@ func _on_disconnection_request(from_name: StringName, from_port: int, _to_name: 
 	var from_id: String = _gname_to_id.get(str(from_name), "")
 	if from_id == "":
 		return
-	var ok := false
-	if from_port == 0:
-		ok = GraphModel.set_next(_dialogue, from_id, "")
-	else:
-		ok = GraphModel.set_choice_target(_dialogue, from_id, from_port - 1, "")
-	if ok:
-		_refresh_connections()
-		_mark_dirty()
+	var previous := _link_target(from_id, from_port)
+	if previous == "":
+		return
+	_run_action("Disconnect dialogue nodes",
+		"_ur_link", {"from_id": from_id, "port": from_port, "to_id": ""},
+		"_ur_link", {"from_id": from_id, "port": from_port, "to_id": previous})
 
 
 func _on_delete_nodes_request(names: Array) -> void:
 	if _dialogue == null or names.is_empty():
 		return
-	var removed := 0
-	var cleaned := 0
+	var ids: Array = []
+	var captures: Array = []
 	for name in names:
 		var node_id: String = _gname_to_id.get(str(name), "")
-		if node_id == "":
+		if node_id == "" or not _dialogue.has_node_id(node_id):
 			continue
-		var report := GraphModel.delete_node(_dialogue, node_id)
-		if bool(report.removed):
-			removed += 1
-			cleaned += int(report.cleaned_links)
-	if removed > 0:
-		_rebuild()
-		_mark_dirty()
-		_set_status("deleted %d node(s), cleared %d link(s)" % [removed, cleaned])
+		ids.append(node_id)
+		captures.append(_capture_node(node_id))
+	if ids.is_empty():
+		return
+	_run_action("Delete dialogue node(s)",
+		"_ur_delete", {"ids": ids},
+		"_ur_undelete", {"captures": captures})
+	_set_status("deleted %d node(s)" % ids.size())
 
 
 func _on_popup_request(at_position: Vector2) -> void:
@@ -414,9 +425,158 @@ func _on_node_selected(node: Node) -> void:
 		EditorInterface.edit_resource(resource)
 
 
+func _on_begin_node_move() -> void:
+	_move_snapshot = _current_positions()
+
+
 func _on_end_node_move() -> void:
-	_persist_positions()
+	var after := _current_positions()
+	var before := {}
+	var changed := {}
+	for node_id in after:
+		var old: Vector2 = _move_snapshot.get(node_id, after[node_id])
+		if old != after[node_id]:
+			before[node_id] = old
+			changed[node_id] = after[node_id]
+	_move_snapshot = {}
+	if changed.is_empty():
+		return
+	_run_action("Move dialogue node(s)",
+		"_ur_positions", {"map": changed},
+		"_ur_positions", {"map": before})
+
+
+# --- undoable operations (single-payload methods for EditorUndoRedoManager) ---
+
+
+## Runs do_method(do_payload) through the undo manager when present,
+## or directly when headless. Both paths have identical effects.
+func _run_action(action_name: String, do_method: StringName, do_payload: Dictionary, undo_method: StringName, undo_payload: Dictionary) -> void:
+	if _undo_redo == null:
+		call(do_method, do_payload)
+		return
+	_undo_redo.create_action(action_name)
+	_undo_redo.add_do_method(self, do_method, do_payload)
+	_undo_redo.add_undo_method(self, undo_method, undo_payload)
+	_undo_redo.commit_action()
+
+
+func _ur_add(payload: Dictionary) -> void:
+	var node: NarrativeDialogueNode = payload.node
+	_dialogue.nodes.append(node)
+	if _dialogue.start_node_id == "" and _dialogue.nodes.size() == 1:
+		_dialogue.start_node_id = node.id
+	_rebuild()
 	_mark_dirty()
+
+
+func _ur_unadd(payload: Dictionary) -> void:
+	GraphModel.delete_node(_dialogue, str(payload.node_id))
+	_dialogue.start_node_id = str(payload.prev_start)
+	_rebuild()
+	_mark_dirty()
+
+
+func _ur_delete(payload: Dictionary) -> void:
+	for node_id in payload.ids:
+		GraphModel.delete_node(_dialogue, str(node_id))
+	_rebuild()
+	_mark_dirty()
+
+
+func _ur_undelete(payload: Dictionary) -> void:
+	var captures: Array = payload.captures
+	for i in range(captures.size() - 1, -1, -1):
+		var capture: Dictionary = captures[i]
+		_dialogue.nodes.insert(mini(int(capture.index), _dialogue.nodes.size()), capture.node)
+	for capture in captures:
+		var restored: NarrativeDialogueNode = capture.node
+		for link in capture.incoming:
+			var from := _dialogue.get_node_by_id(str(link.from_id))
+			if from == null:
+				continue
+			var choice_index := int(link.choice_index)
+			if choice_index < 0:
+				from.next_node_id = restored.id
+			elif choice_index < from.choices.size() and from.choices[choice_index] != null:
+				from.choices[choice_index].target_node_id = restored.id
+		if bool(capture.was_start):
+			_dialogue.start_node_id = restored.id
+	_rebuild()
+	_mark_dirty()
+
+
+func _ur_link(payload: Dictionary) -> void:
+	var port := int(payload.port)
+	if port == 0:
+		GraphModel.set_next(_dialogue, str(payload.from_id), str(payload.to_id))
+	else:
+		GraphModel.set_choice_target(_dialogue, str(payload.from_id), port - 1, str(payload.to_id))
+	_refresh_connections()
+	_mark_dirty()
+
+
+func _ur_start(payload: Dictionary) -> void:
+	_dialogue.start_node_id = str(payload.node_id)
+	_update_start_styling()
+	_mark_dirty()
+
+
+func _ur_positions(payload: Dictionary) -> void:
+	for node_id in payload.map:
+		var node := _dialogue.get_node_by_id(str(node_id))
+		if node != null:
+			GraphModel.set_position(node, payload.map[node_id])
+		var gname: String = _id_to_gname.get(str(node_id), "")
+		if gname != "" and _graph.has_node(NodePath(gname)):
+			(_graph.get_node(NodePath(gname)) as GraphNode).position_offset = payload.map[node_id]
+	_mark_dirty()
+
+
+func _capture_node(node_id: String) -> Dictionary:
+	var index := -1
+	var node: NarrativeDialogueNode = null
+	for i in _dialogue.nodes.size():
+		if _dialogue.nodes[i] != null and _dialogue.nodes[i].id == node_id:
+			index = i
+			node = _dialogue.nodes[i]
+			break
+	var incoming: Array = []
+	for other in _dialogue.nodes:
+		if other == null or other.id == node_id:
+			continue
+		if other.next_node_id == node_id:
+			incoming.append({"from_id": other.id, "choice_index": -1})
+		for choice_index in other.choices.size():
+			if other.choices[choice_index] != null and other.choices[choice_index].target_node_id == node_id:
+				incoming.append({"from_id": other.id, "choice_index": choice_index})
+	return {
+		"node": node,
+		"index": index,
+		"incoming": incoming,
+		"was_start": _dialogue.start_node_id == node_id,
+	}
+
+
+func _current_positions() -> Dictionary:
+	var map := {}
+	for child in _graph.get_children():
+		if child is GraphNode:
+			var node_id: String = _gname_to_id.get(str(child.name), "")
+			if node_id != "":
+				map[node_id] = child.position_offset
+	return map
+
+
+func _link_target(from_id: String, port: int) -> String:
+	var node := _dialogue.get_node_by_id(from_id)
+	if node == null:
+		return ""
+	if port == 0:
+		return node.next_node_id
+	if port - 1 < node.choices.size() and node.choices[port - 1] != null:
+		return node.choices[port - 1].target_node_id
+	return ""
 
 
 func _on_new_dialogue_confirmed() -> void:

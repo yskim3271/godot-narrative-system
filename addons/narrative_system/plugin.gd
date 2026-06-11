@@ -28,6 +28,7 @@ func _enter_tree() -> void:
 	_panel = PanelScript.new()
 	add_control_to_bottom_panel(_panel, "Narrative")
 	_graph_editor = GraphEditorScript.new()
+	_graph_editor.set_undo_redo(get_undo_redo())
 	EditorInterface.get_editor_main_screen().add_child(_graph_editor)
 	_make_visible(false)
 
