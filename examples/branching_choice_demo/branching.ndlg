@@ -1,0 +1,50 @@
+# Branching Choice Demo 대화 — .ndlg 텍스트 포맷으로 저작 (docs/text_script.md)
+# 첫만남/재방문 인사 변형 + 조건부/비활성 선택지 + 메뉴 루프
+
+dialogue merchant_talk
+title 상인 대화
+start greet_back
+
+node greet_back
+speaker merchant
+if has_seen("merchant_talk", "greet_first")
+text 또 오셨군! 단골이 되시려나?
+next greet_first
+
+node greet_first
+speaker merchant
+if not has_seen("merchant_talk", "greet_first")
+text 어서 오시게! 처음 보는 손님이군.
+next menu
+
+node menu
+speaker merchant
+text 무엇을 도와드릴까?
+choice c_buy -> bought
+  text 사과를 사겠소 (5골드)
+  if gold >= 5
+  do gold -= 5
+  do apples += 1
+  show_disabled
+choice c_rich -> vip
+  text 나는 부자라네.
+  if gold >= 100
+choice c_chat -> chat
+  text 그냥 구경 중이오.
+choice c_bye ->
+  text 잘 있으시오.
+
+node bought
+speaker merchant
+text 좋은 선택이야! 사과 하나 받게.
+next menu
+
+node vip
+speaker merchant
+text 오! 귀한 분을 몰라뵀군!
+next menu
+
+node chat
+speaker merchant
+text 천천히 둘러보시게. 좋은 물건이 많다네.
+next menu

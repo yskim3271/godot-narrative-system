@@ -1,0 +1,91 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://examples/localization_cutscene_demo/loc_cutscene.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/dialogue_box.tscn" id="2_box"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/choice_list.tscn" id="3_choices"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/bark_ui.tscn" id="4_bark"]
+[ext_resource type="Script" path="res://addons/narrative_system/runtime/narrative_actor.gd" id="5_actor"]
+
+[sub_resource type="Animation" id="Animation_perform"]
+resource_name = "perform"
+length = 0.6
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Body:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.45, 0.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.0, -0.35, 0.35, 0.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_bard"]
+_data = {
+&"perform": SubResource("Animation_perform")
+}
+
+[node name="LocalizationCutsceneDemo" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Player" type="Node2D" parent="."]
+position = Vector2(-150, 80)
+
+[node name="Body" type="Polygon2D" parent="Player"]
+color = Color(0.3, 0.5, 0.85, 1)
+polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
+
+[node name="Npc" type="Node2D" parent="."]
+position = Vector2(180, -40)
+
+[node name="Body" type="Polygon2D" parent="Npc"]
+color = Color(0.55, 0.4, 0.8, 1)
+polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+
+[node name="NarrativeActor" type="Node" parent="Npc"]
+script = ExtResource("5_actor")
+actor_id = "bard"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Npc"]
+libraries = {
+&"": SubResource("AnimationLibrary_bard")
+}
+
+[node name="BarkTimer" type="Timer" parent="."]
+wait_time = 3.5
+autostart = true
+
+[node name="DialogueBox" parent="." instance=ExtResource("2_box")]
+
+[node name="ChoiceList" parent="." instance=ExtResource("3_choices")]
+
+[node name="BarkUI" parent="." instance=ExtResource("4_bark")]
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Hints" type="Label" parent="Hud"]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -34.0
+offset_right = -12.0
+offset_bottom = -10.0
+grow_vertical = 0
+modulate = Color(1, 1, 1, 0.75)
+
+[node name="Prompt" type="Label" parent="Hud"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = 40.0
+offset_right = 80.0
+offset_bottom = 66.0
+horizontal_alignment = 1
+visible = false

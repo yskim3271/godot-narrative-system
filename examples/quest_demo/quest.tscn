@@ -1,0 +1,81 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://examples/quest_demo/quest.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/dialogue_box.tscn" id="2_box"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/choice_list.tscn" id="3_choices"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/quest_log.tscn" id="4_log"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/quest_tracker.tscn" id="5_tracker"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/alert_ui.tscn" id="6_alert"]
+
+[node name="QuestDemo" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Player" type="Node2D" parent="."]
+position = Vector2(-160, 90)
+
+[node name="Body" type="Polygon2D" parent="Player"]
+color = Color(0.3, 0.5, 0.85, 1)
+polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
+
+[node name="Npc" type="Node2D" parent="."]
+position = Vector2(190, -60)
+
+[node name="Body" type="Polygon2D" parent="Npc"]
+color = Color(0.7, 0.45, 0.75, 1)
+polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+
+[node name="Herbs" type="Node2D" parent="."]
+
+[node name="Herb1" type="Polygon2D" parent="Herbs"]
+position = Vector2(-300, -110)
+color = Color(0.35, 0.75, 0.35, 1)
+polygon = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+
+[node name="Herb2" type="Polygon2D" parent="Herbs"]
+position = Vector2(-60, 220)
+color = Color(0.35, 0.75, 0.35, 1)
+polygon = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+
+[node name="Herb3" type="Polygon2D" parent="Herbs"]
+position = Vector2(330, 160)
+color = Color(0.35, 0.75, 0.35, 1)
+polygon = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+
+[node name="DialogueBox" parent="." instance=ExtResource("2_box")]
+
+[node name="ChoiceList" parent="." instance=ExtResource("3_choices")]
+
+[node name="QuestLog" parent="." instance=ExtResource("4_log")]
+
+[node name="QuestTracker" parent="." instance=ExtResource("5_tracker")]
+
+[node name="AlertUI" parent="." instance=ExtResource("6_alert")]
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Hints" type="Label" parent="Hud"]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -34.0
+offset_right = -12.0
+offset_bottom = -10.0
+grow_vertical = 0
+modulate = Color(1, 1, 1, 0.75)
+text = "이동: 방향키 · E: 대화 · J: 퀘스트 로그 — 약초(녹색)를 밟아 채집"
+
+[node name="Prompt" type="Label" parent="Hud"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = 40.0
+offset_right = 80.0
+offset_bottom = 66.0
+horizontal_alignment = 1
+text = "[E] 대화하기"
+visible = false

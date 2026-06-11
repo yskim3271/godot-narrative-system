@@ -55,7 +55,17 @@ func load_database(db: NarrativeDatabase) -> bool:
 	if context != null and context.runner.is_dialogue_running():
 		push_error("Narrative: cannot replace the database while a dialogue is running")
 		return false
+	# Scene actors (NarrativeActor) outlive the context: carry the registry
+	# over so a load_database() in a scene's _ready keeps already-registered
+	# NPCs targetable by the sequencer and barks.
+	var previous_registry := {}
+	if context != null:
+		previous_registry = context.actor_registry
 	context = NarrativeContext.create(db, get_tree())
+	for actor_id in previous_registry:
+		var node: Node = previous_registry[actor_id]
+		if is_instance_valid(node):
+			context.register_actor(actor_id, node)
 	_wire(context)
 	return true
 

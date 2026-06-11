@@ -1,0 +1,61 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://examples/branching_choice_demo/branching.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/dialogue_box.tscn" id="2_box"]
+[ext_resource type="PackedScene" path="res://addons/narrative_system/ui/choice_list.tscn" id="3_choices"]
+
+[node name="BranchingChoiceDemo" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Player" type="Node2D" parent="."]
+position = Vector2(-140, 60)
+
+[node name="Body" type="Polygon2D" parent="Player"]
+color = Color(0.3, 0.5, 0.85, 1)
+polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
+
+[node name="Npc" type="Node2D" parent="."]
+position = Vector2(150, -30)
+
+[node name="Body" type="Polygon2D" parent="Npc"]
+color = Color(0.85, 0.65, 0.3, 1)
+polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+
+[node name="DialogueBox" parent="." instance=ExtResource("2_box")]
+
+[node name="ChoiceList" parent="." instance=ExtResource("3_choices")]
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Hints" type="Label" parent="Hud"]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -34.0
+offset_right = -12.0
+offset_bottom = -10.0
+grow_vertical = 0
+modulate = Color(1, 1, 1, 0.75)
+text = "이동: 방향키 · E: 대화 — 골드에 따라 선택지가 비활성/숨김 처리되는 것을 확인하세요"
+
+[node name="Stats" type="Label" parent="Hud"]
+offset_left = 12.0
+offset_top = 10.0
+offset_right = 320.0
+offset_bottom = 34.0
+
+[node name="Prompt" type="Label" parent="Hud"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = 40.0
+offset_right = 80.0
+offset_bottom = 66.0
+horizontal_alignment = 1
+text = "[E] 대화하기"
+visible = false
