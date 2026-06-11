@@ -35,11 +35,12 @@
 ## 결정/메모
 - 검증 이슈에 구조화 ref를 "추가 저장"하는 대신 `where` 역파싱을 택함 — 40여 개 호출부 변경 없이 CLI/테스트 출력 포맷 유지. 포맷 변경 시 라운드트립 테스트가 즉시 잡음.
 - 미리보기의 시퀀서 실행은 의도적으로 제외(M3-3 인터럽트/액터 미리보기와 함께 재검토).
-- 에디터 GUI 수동 검증: computer-use 승인 대기로 보류 — 체크리스트는 본 보고서 하단.
 
-## 수동 검증 체크리스트 (에디터)
-- [ ] 하단 패널 4탭(Database/Validation/Localization/Preview) 표시·전환
-- [ ] Preview: 데모 DB 대화 재생(라인/선택지/Next), 언어 전환, Stop/재시작
-- [ ] Localization: 행 표시, 로케일 필터, 더블클릭 → Inspector+그래프 포커스
-- [ ] Validation: 이슈 더블클릭 → 메인 스크린 Narrative 전환 + 노드 선택/중앙 정렬
-- [ ] demo_database.tres 저장 안 함(확인 후 git status 클린)
+## 수동 검증 체크리스트 (에디터) — 2026-06-11 완료, 전부 통과
+- [x] 하단 패널 4탭(Database/Validation/Localization/Preview) 표시·전환 — 에디터 한국어 모드에선 탭 제목이 "현지화/미리보기"로 자동 번역됨(무해)
+- [x] Preview: guard_talk 재생(조건 스킵·로컬라이즈 화자·🎬 시퀀스 로그·상태 트리·선택지 버튼/비활성·퀘스트 📜/알림 🔔), 실행 중 ko→en 전환 재표현, Stop
+- [x] Localization: 데모 DB 완역이라 "17/17 ✓ complete" 요약(행 없음 정상); 더블클릭 경로는 Validation과 동일 핸들러 + 헤드리스 커버
+- [x] Validation: `[var=ghost]` 임시 경고 → 더블클릭 → g_first 선택+중앙 정렬+Inspector 오픈 → Ctrl+Z 복원 → 0/0
+- [x] demo_database.tres 저장 안 함 — git status 클린 확인
+
+상세 로그: [test_report.md](../test_report.md)의 "M2-2 수동 확인 결과".

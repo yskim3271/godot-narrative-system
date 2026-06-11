@@ -83,4 +83,14 @@ headless로 검증 불가능한 경로를 에디터를 직접 띄워 확인. 결
 
 - 테스트 212 → **248** (+25 M2-2 하단 패널, +11 M3-2 퀘스트). 5단계 파이프라인 ALL GREEN.
 - M3-2(런타임 전용)는 headless 테스트로 충분 — 에디터 GUI 경로 없음.
-- **M2-2 에디터 GUI 수동 검증은 보류 중**: computer-use 승인 대기(요청 3회 타임아웃). 체크리스트는 [m2_bottom_panel_report.md](reports/m2_bottom_panel_report.md) 하단 — Preview 재생/Localization 더블클릭 포커스/Validation→그래프 점프/패널 4탭. 에디터 headless 부팅 스모크(`--editor --headless --quit-after`)로 패널·플러그인 로드 무에러는 확인(함정 ⑧⑨류 시각 결함은 headless로 검출 불가 — 수동 확인 필수).
+- 에디터 headless 부팅 스모크(`--editor --headless --quit-after 120`): exit 0, SCRIPT ERROR 0.
+
+### M2-2 수동 확인 결과 (2026-06-11, 에디터 GUI + computer-use)
+
+전 항목 통과, **신규 시각 결함 없음** (데모 DB 무저장 — git clean 확인):
+
+1. **패널 4탭**: Database / Validation / Localization / Preview 표시·전환. ✅ (참고: 에디터 언어가 한국어면 탭 제목이 에디터 번역 카탈로그에 의해 "현지화"/"미리보기"로 자동 번역됨 — 무해, 의도와 다르면 `auto_translate` 끄기 후보)
+2. **Preview 재생**: guard_talk Start → 시작 노드 조건 스킵(g_return→g_first) 후 첫 라인, 로컬라이즈 화자(경비병)+노드 태그, 🎬 시퀀스 미실행 로그, 상태 트리(gold 30·met_guard false). Next → g_menu 선택지 3개 버튼(통행료 50골드는 gold 30이라 **비활성 표시**). 선택 → 📜 rat_hunt active + 🔔 알림 + 다중 명령 시퀀스 로그 + 선택지 버튼 정리. ✅
+3. **실행 중 언어 전환**: ko→en 셀렉터 → 현재 라인이 "Guard: The cellar is crawling with rats…"로 즉시 재표현(화자명 포함). ✅
+4. **Localization 탭**: 데모 DB는 완역이라 "17/17 unit(s) fully translated · ✓ complete" 요약 + 빈 목록(정상). 더블클릭 포커스는 Validation과 동일한 focus_reference 경로(아래 5) + 헤드리스 테스트로 커버. ✅
+5. **Validation 더블클릭 → 포커스**: g_first 텍스트에 `[var=ghost]` 임시 추가(미저장) → Validate "0 error(s), 1 warning(s)" → 행 더블클릭 → **그래프에서 g_first 단일 선택+뷰 중앙 정렬**, 그래프 상태줄 "focused 'guard_talk' / 'g_first'", 패널 상태줄 갱신, **Inspector에 해당 NarrativeDialogueNode 자동 오픈**. Ctrl+Z 1회로 복원(인라인 칸 동기, 타이틀 (*) 해제) → 재검증 0/0 "No issues found". ✅
