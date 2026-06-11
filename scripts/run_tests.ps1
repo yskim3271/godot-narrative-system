@@ -1,8 +1,8 @@
 # Narrative System — full headless verification suite.
 # Usage:
-#   .\scripts\run_tests.ps1                 # import + all tests
+#   .\scripts\run_tests.ps1                 # import + tests + purity gate + demo-db validation
 #   .\scripts\run_tests.ps1 -Filter lexer   # only test scripts matching "lexer"
-#   .\scripts\run_tests.ps1 -SkipImport     # skip the import step
+#   .\scripts\run_tests.ps1 -SkipImport
 param(
     [string]$Filter = "",
     [switch]$SkipImport,
@@ -10,6 +10,7 @@ param(
 )
 
 $projectRoot = Split-Path $PSScriptRoot -Parent
+$failed = $false
 
 if (-not (Test-Path $GodotExe)) {
     Write-Host "ERROR: Godot console executable not found at: $GodotExe" -ForegroundColor Red
@@ -18,23 +19,51 @@ if (-not (Test-Path $GodotExe)) {
 }
 
 if (-not $SkipImport) {
-    Write-Host "=== Godot import ===" -ForegroundColor Cyan
-    & $GodotExe --headless --path $projectRoot --import
+    Write-Host "=== [1/4] Godot import ===" -ForegroundColor Cyan
+    & $GodotExe --headless --path $projectRoot --import | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Import failed (exit $LASTEXITCODE)" -ForegroundColor Red
         exit $LASTEXITCODE
     }
 }
 
-Write-Host "=== Unit tests ===" -ForegroundColor Cyan
+Write-Host "=== [2/4] Unit tests ===" -ForegroundColor Cyan
 $godotArgs = @("--headless", "--path", $projectRoot, "-s", "res://addons/narrative_system/tests/run_tests.gd")
 if ($Filter) { $godotArgs += @("--", "--filter=$Filter") }
-& $GodotExe @godotArgs
+$testOut = & $GodotExe @godotArgs 2>&1
 $testExit = $LASTEXITCODE
-
-if ($testExit -eq 0) {
-    Write-Host "ALL GREEN" -ForegroundColor Green
-} else {
-    Write-Host "FAILURES (exit $testExit)" -ForegroundColor Red
+$testOut | ForEach-Object { Write-Host $_ }
+if ($testExit -ne 0) { $failed = $true }
+$scriptErrors = ($testOut | Select-String "SCRIPT ERROR").Count
+if ($scriptErrors -gt 0) {
+    Write-Host "FAIL: $scriptErrors SCRIPT ERROR line(s) in test output (compile/abort problems)" -ForegroundColor Red
+    $failed = $true
 }
-exit $testExit
+
+if (-not $Filter) {
+    Write-Host "=== [3/4] Happy-path purity (integration flow must be error/warning-free) ===" -ForegroundColor Cyan
+    $pureOut = & $GodotExe --headless --path $projectRoot -s res://addons/narrative_system/tests/run_tests.gd -- --filter=integration_flow 2>&1
+    if ($LASTEXITCODE -ne 0) { $failed = $true }
+    $noise = $pureOut | Select-String -Pattern "^\s*(ERROR|WARNING|SCRIPT ERROR)"
+    if ($noise.Count -gt 0) {
+        Write-Host "FAIL: happy path emitted engine errors/warnings:" -ForegroundColor Red
+        $noise | ForEach-Object { Write-Host "  $_" }
+        $failed = $true
+    } else {
+        Write-Host "happy path clean (no engine errors or warnings)" -ForegroundColor Green
+    }
+
+    Write-Host "=== [4/4] Demo database validation (CLI) ===" -ForegroundColor Cyan
+    & $GodotExe --headless --path $projectRoot -s res://addons/narrative_system/validation/validate_cli.gd -- --db=res://examples/integrated_demo/demo_database.tres --strict
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Demo database validation failed" -ForegroundColor Red
+        $failed = $true
+    }
+}
+
+if ($failed) {
+    Write-Host "RESULT: FAIL" -ForegroundColor Red
+    exit 1
+}
+Write-Host "RESULT: ALL GREEN" -ForegroundColor Green
+exit 0
