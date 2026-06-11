@@ -7,7 +7,7 @@
 | 단계 | 내용 | 결과 |
 |---|---|---|
 | 1 | `--import` (클래스 캐시/에셋) | ✅ exit 0 |
-| 2 | 유닛/통합 테스트 (19 파일) | ✅ **174/174 PASS**, ~5.0s, SCRIPT ERROR 0 |
+| 2 | 유닛/통합 테스트 (19 파일) | ✅ **175/175 PASS**, ~5.0s, SCRIPT ERROR 0 |
 | 3 | 해피패스 순수성 게이트 (통합 플로우 출력에 엔진 ERROR/WARNING 0) | ✅ clean |
 | 4 | 데모 DB 정적 검증 (`validate_cli --strict`) | ✅ 0 error / 0 warning |
 | 5 | **데모 씬 5종 headless 부팅** (30프레임, SCRIPT ERROR 0) | ✅ 5/5 |
@@ -35,7 +35,7 @@
 | test_demo_database | 4 | 출하 데모 DB 상시 검증 + 콘텐츠 플로우 |
 | test_integration_flow | 1 | 종단: 수주→중간 저장→새 컨텍스트 로드→재개→완료→언어→왕복 |
 | test_graph_model | 12 | 그래프 편집 모델: 추가/삭제(참조 정리)/연결/시작/자동 배치/.tres 위치 왕복 |
-| test_graph_editor_ui | 8 | GraphEdit 셸: 포트 배선·연결/해제/삭제 제스처·시작 표시·위치 영속 |
+| test_graph_editor_ui | 9 | GraphEdit 셸: 포트 배선·연결/해제/삭제 제스처·시작 표시·위치 영속·**Container 부모 채움(EXPAND_FILL 회귀)** |
 | test_graph_undo | 6 | undo/redo: 추가·삭제(링크/시작 복원)·연결 재배선·이동, 무변화 제스처 무기록 |
 | test_script_parser | 11 | .ndlg: 문법 전체·부착 규칙·줄 번호 에러·원자적 임포트·교체/스킵·**왕복**·런타임 재생 |
 
@@ -52,8 +52,15 @@
 - 프레임 경계 정렬로 타이머 결정성 확보(부팅 delta·동기 작업 선입금 보정)
 - 픽스처는 전부 코드 생성(`db_factory.gd`) — 클래스 변경 시 컴파일 에러로 즉시 발견
 
-## 수동 확인 권장 항목
+## 수동 확인 결과 (2026-06-11, Godot 4.6.3 에디터 GUI + computer-use)
 
-1. 에디터에서 플러그인 체크박스 토글 → autoload 등록/해제 확인 (headless 자동화 불가 경로)
-2. 데모 ▶ 실행 후 README의 체험 순서 8단계 (시각/입력 경험)
-3. 하단 Narrative 패널에서 데모 DB Load → Validate → CSV Export/Import
+headless로 검증 불가능한 경로를 에디터를 직접 띄워 확인. 결과 전부 통과:
+
+1. **플러그인 토글**: 체크박스 OFF → `Narrative` autoload가 project.godot·에디터 오토로드 목록·메인스크린 탭·하단 패널에서 모두 제거됨. ON → autoload(UID 형식으로 재기록)·탭·패널 전부 복원. ✅
+2. **그래프 에디터(메인스크린 "Narrative" 탭)**: guard_talk 열기, 노드 드래그(선택 시 인스펙터 연동)·Ctrl+Z/Ctrl+Y(이동/Set Start/삭제 전부 undo·redo)·Set Start(▶ 이동)·Del 삭제(+undo 시 링크 복원)·Save(노드 위치를 .tres에 기록). ✅ — 포트 연결/해제 데이터 로직은 헤드리스 3종 + 시각 렌더링으로 확인.
+3. **하단 Narrative 패널**: Load(프로젝트 설정에서 자동 로드)·Validate(0 error, "No issues found")·Export CSV(파일 기록 확인)·Import Script(branching.ndlg → "1 new, 0 replaced, saved"). ✅
+4. **데모 5종**: integrated(8단계 전부: 분기·조건/비활성 선택지·퀘스트+컷신(set_expression)·트래커/로그·objective 진행·보상(30→130골드)·**선택지 화면 한가운데 F5/F9 복원**·K 즉시 한↔영·bark 순환)·basic(선형 대화)·branching(첫만남 변형·숨김/비활성 선택지·구매 액션·메뉴 루프)·localization_cutscene(K 전환·시퀀서 컷신·카메라 복귀)·quest(수주·objective 0/3→3/3 자동완료·월드 파생). ✅
+
+### 발견·수정한 버그
+
+- **그래프 에디터가 실제 에디터 메인스크린에서 빈 캔버스로 표시됨 (출하 1.0.0 결함)**: 에디터 메인스크린은 Container(VBoxContainer)라 자식 크기를 size flags로 정하고 anchors를 무시하는데, 그래프 에디터는 `PRESET_FULL_RECT` anchors만 설정하고 `EXPAND_FILL`을 두지 않아 최소 높이로 접혀 GraphEdit 높이가 0 → 노드 전부 비가시. 헤드리스 테스트는 비-Container 부모(`scene_tree.root`)에 붙여서 검출 못 함. → `size_flags = EXPAND_FILL` 추가, Container 부모 회귀 테스트 추가. (커밋: graph editor empty-canvas fix)
