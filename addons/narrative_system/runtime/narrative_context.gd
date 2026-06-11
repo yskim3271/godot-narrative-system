@@ -14,6 +14,7 @@ signal bark_requested(character_id: String, text: String, attach_to: Node)
 const Evaluator := preload("dsl/evaluator.gd")
 const BuiltinFunctions := preload("dsl/builtin_functions.gd")
 const BuiltinCommands := preload("builtin_commands.gd")
+const TextMarkup := preload("text_markup.gd")
 
 var database: NarrativeDatabase
 var settings: NarrativeSettings
@@ -86,7 +87,8 @@ static func create(db: NarrativeDatabase, tree: SceneTree = null) -> NarrativeCo
 
 ## Localizes and broadcasts an alert (AlertUI subscribes to alert_requested).
 func request_alert(text_or_key: String) -> void:
-	alert_requested.emit(localization.resolve_text_or_key(text_or_key))
+	alert_requested.emit(TextMarkup.substitute_variables(
+		localization.resolve_text_or_key(text_or_key), state))
 
 
 ## Localizes and broadcasts a bark (BarkUI subscribes to bark_requested).
@@ -95,7 +97,8 @@ func bark(character_id: String, text_or_key: String, attach_to: Node = null) -> 
 	var target := attach_to
 	if target == null:
 		target = get_actor(character_id)
-	bark_requested.emit(character_id, localization.resolve_text_or_key(text_or_key), target)
+	bark_requested.emit(character_id, TextMarkup.substitute_variables(
+		localization.resolve_text_or_key(text_or_key), state), target)
 
 
 # --- actor registry (used by the sequencer and barks) ---

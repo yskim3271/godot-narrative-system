@@ -3,14 +3,14 @@
 의도적 범위 제한(로드맵 항목)과 동작상 제약을 구분해 정리합니다.
 
 ## 저작 도구
-- **노드 그래프 에디터**: 보기/추가/연결/삭제/시작 지정/배치 저장 + 구조 변경 undo/redo 지원. 한계 — 필드 편집은 Inspector 경유(인라인 편집은 로드맵), Inspector에서의 구조 변경은 Refresh 필요, 노드 id rename 시 링크 자동 추적 없음(Validate로 확인). 상세: [graph_editor.md](graph_editor.md).
+- **노드 그래프 에디터**: 보기/추가/연결/삭제/시작 지정/배치 저장 + 인라인 편집(텍스트/화자/노드 id rename/선택지 텍스트·타깃) + undo/redo 지원. 한계 — 조건/액션/시퀀스·선택지 조건은 Inspector 경유(❓⚡🎬 배지), Inspector에서의 구조 변경은 Refresh 필요. 상세: [graph_editor.md](graph_editor.md).
 - **.ndlg 텍스트 포맷**은 대화 전용 — 캐릭터/퀘스트/변수/번역 테이블은 코드·Inspector로 저작 ([text_script.md](text_script.md)). 텍스트 임포트로 기존 대화를 교체하면 그래프 배치가 초기화됩니다(자동 배치로 복구).
 - 에디터 플러그인 활성화 토글(`_enable_plugin`) 경로는 headless 자동화가 불가능해 수동 확인 대상입니다 (패널·그래프 탭·런타임·CLI·데모 부팅은 자동 검증됨).
 
 ## 대화 런타임
 - **동시 대화 1개** — 실행 중 `start_dialogue()`는 거부됩니다. 인터럽트/스택은 미지원.
 - 노드의 `next_node_id`는 "조건 스킵 대상"과 "advance 대상"을 겸합니다 — 인사 변형 같은 패턴은 [dialogue_authoring.md](dialogue_authoring.md)의 라우팅 패턴으로 해결.
-- 대사 텍스트 인라인 마크업(`[var=x]` 치환 등) 미지원 — BBCode는 RichTextLabel이 그대로 렌더링하므로 사용 가능.
+- 대사 텍스트 인라인 마크업은 `[var=x]` 변수 치환만 지원(대사/선택지/바크/알림, 미선언 변수는 태그 원문 유지 + 검증기 경고). 그 외 `[color]` 등 BBCode는 RichTextLabel이 그대로 렌더링. Unity DS의 `[lua(...)]`식 표현식 치환은 없음.
 - 언어 전환 시 표시 중 대사의 타자기 효과가 처음부터 재생됩니다.
 
 ## 퀘스트

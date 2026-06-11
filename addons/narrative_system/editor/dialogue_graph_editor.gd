@@ -14,14 +14,21 @@ extends Control
 ## Slot 1 is the portless text-editor row.
 ##
 ## Inline editing (undoable): the node id and speaker_id (header row, slot 0 —
-## renaming the id retargets every link to it) and text (slot 1) are edited in
-## place. The title mirrors the id read-only (▶ marks the start node).
-## Remaining fields (conditions/actions/sequencer/choices) are edited in the
-## Inspector — selecting a node opens its NarrativeDialogueNode there; those
-## show as ❓⚡🎬 badges and refresh after Refresh / re-opening the tab.
-## All edits (inline + structural add/delete/link/move/set-start/rename) are
-## undoable through the injected EditorUndoRedoManager (see set_undo_redo and
-## docs/graph_editor.md).
+## renaming the id retargets every link to it), text (slot 1) and each choice's
+## text + target id (slots 2+) are edited in place. The title mirrors the id
+## read-only (▶ marks the start node).
+## Remaining fields (conditions/actions/sequencer, choice conditions) are
+## edited in the Inspector — selecting a node opens its NarrativeDialogueNode
+## there; those show as ❓⚡🎬 badges and refresh after Refresh / re-opening
+## the tab. All edits (inline + structural add/delete/link/move/set-start/
+## rename) are undoable through the injected EditorUndoRedoManager (see
+## set_undo_redo and docs/graph_editor.md).
+##
+## Markup helpers inside the text/choice-text fields:
+##   Ctrl+Shift+V — insert [var=…] (selection becomes the variable name)
+##   Ctrl+Shift+C — wrap the selection in [color=…][/color]
+## Ctrl+Shift+N (canvas) / the "1.2.3" toolbar button toggles "1. " numbering
+## on the selected node's choice texts.
 
 const GraphModel := preload("dialogue_graph_model.gd")
 const SETTING_DATABASE_PATH := "narrative_system/database_path"
@@ -30,6 +37,8 @@ const COLOR_IN := Color(0.78, 0.78, 0.78)
 const COLOR_NEXT := Color(0.55, 0.78, 1.0)
 const COLOR_CHOICE := Color(1.0, 0.84, 0.4)
 const MENU_ADD_NODE := 0
+const MARKUP_COLOR_DEFAULT := "yellow"
+const MARKUP_TOOLTIP := "Ctrl+Shift+V inserts [var=…], Ctrl+Shift+C wraps [color=…]"
 
 var _db: NarrativeDatabase
 var _dialogue: NarrativeDialogue
@@ -223,6 +232,8 @@ func _build_ui() -> void:
 	_toolbar_button(toolbar, "Add Node", func() -> void: add_node_at_view_center())
 	_toolbar_button(toolbar, "Set Start", set_selection_as_start)
 	_toolbar_button(toolbar, "Delete", delete_selection)
+	_toolbar_button(toolbar, "1.2.3", auto_number_selected_choices,
+		"Toggle \"1. \" numbering on the selected node's choice texts (Ctrl+Shift+N)")
 	toolbar.add_child(VSeparator.new())
 	_toolbar_button(toolbar, "Save", save_database)
 	_toolbar_button(toolbar, "Validate", validate_database)
@@ -244,6 +255,7 @@ func _build_ui() -> void:
 	_graph.node_selected.connect(_on_node_selected)
 	_graph.begin_node_move.connect(_on_begin_node_move)
 	_graph.end_node_move.connect(_on_end_node_move)
+	_graph.gui_input.connect(_on_graph_gui_input)
 	vbox.add_child(_graph)
 
 	_context_menu = PopupMenu.new()
@@ -263,9 +275,10 @@ func _build_ui() -> void:
 	add_child(_new_dialog)
 
 
-func _toolbar_button(parent: Control, text: String, handler: Callable) -> void:
+func _toolbar_button(parent: Control, text: String, handler: Callable, tooltip := "") -> void:
 	var button := Button.new()
 	button.text = text
+	button.tooltip_text = tooltip
 	button.pressed.connect(handler)
 	parent.add_child(button)
 
@@ -335,23 +348,46 @@ func _spawn_graph_node(node: NarrativeDialogueNode) -> GraphNode:
 	text_edit.custom_minimum_size = Vector2(240, 60)
 	text_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	text_edit.scroll_fit_content_height = true
+	text_edit.tooltip_text = "Dialogue text — " + MARKUP_TOOLTIP
 	gnode.add_child(text_edit)
 	gnode.set_meta("text_edit", text_edit)
 	# TextEdit is multiline: Enter inserts a newline, so commit on focus loss only.
 	text_edit.focus_entered.connect(_capture_edit_before.bind(text_edit))
 	text_edit.focus_exited.connect(_commit_field.bind(text_edit, node.id, "text"))
+	_wire_markup_keys(text_edit)
 
-	# slots 2.. — one output port per choice (targets edited via the Inspector)
+	# slots 2.. — one row per choice: inline text + target id, one output port.
 	for i in node.choices.size():
 		var choice := node.choices[i]
-		var row := Label.new()
-		var label_text := "(null choice)"
-		if choice != null:
-			label_text = choice.text if choice.text != "" else choice.id
-		row.text = "▸ " + _ellipsis(label_text, 42)
-		row.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		if choice == null:
+			var null_row := Label.new()
+			null_row.text = "(null choice)"
+			null_row.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			gnode.add_child(null_row)
+			gnode.set_slot(2 + i, false, 0, COLOR_IN, true, 0, COLOR_CHOICE)
+			continue
+		var row := HBoxContainer.new()
+		var choice_text := LineEdit.new()
+		choice_text.text = choice.text
+		choice_text.placeholder_text = "choice text…"
+		choice_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		choice_text.custom_minimum_size = Vector2(150, 0)
+		choice_text.tooltip_text = "Choice '%s' text — %s" % [choice.id, MARKUP_TOOLTIP]
+		row.add_child(choice_text)
+		var choice_target := LineEdit.new()
+		choice_target.text = choice.target_node_id
+		choice_target.placeholder_text = "(end)"
+		choice_target.flat = true
+		choice_target.custom_minimum_size = Vector2(86, 0)
+		choice_target.tooltip_text = "Choice '%s' target node id — empty ends the dialogue" % choice.id
+		row.add_child(choice_target)
 		gnode.add_child(row)
 		gnode.set_slot(2 + i, false, 0, COLOR_IN, true, 0, COLOR_CHOICE)
+		gnode.set_meta("choice_text_%d" % i, choice_text)
+		gnode.set_meta("choice_target_%d" % i, choice_target)
+		_wire_inline_edit(choice_text, _commit_choice_text.bind(choice_text, node.id, i))
+		_wire_inline_edit(choice_target, _commit_choice_target.bind(choice_target, node.id, i))
+		_wire_markup_keys(choice_text)
 
 	_graph.add_child(gnode)
 	return gnode
@@ -399,6 +435,149 @@ func _commit_rename(edit: LineEdit, node_id: String) -> void:
 	_set_status("renamed '%s' → '%s'" % [before, after])
 
 
+## Commits an inline choice-text edit as one undoable action.
+func _commit_choice_text(control: Control, node_id: String, choice_index: int) -> void:
+	var before := str(control.get_meta("edit_before", control.text))
+	var after: String = control.text
+	if after == before:
+		return
+	_run_action("Edit choice text",
+		"_ur_choice_text", {"node_id": node_id, "index": choice_index, "value": after},
+		"_ur_choice_text", {"node_id": node_id, "index": choice_index, "value": before})
+
+
+## Commits an inline choice-target edit. Empty ends the dialogue; unknown node
+## ids are rejected and the field reverts. Shares _ur_link with port drags, so
+## the canvas connection and the field stay in sync on do AND undo.
+func _commit_choice_target(edit: LineEdit, node_id: String, choice_index: int) -> void:
+	var before := str(edit.get_meta("edit_before", edit.text))
+	var after := edit.text.strip_edges()
+	if after == before:
+		edit.text = before  # normalize stray whitespace
+		return
+	if after != "" and (_dialogue == null or not _dialogue.has_node_id(after)):
+		_set_status("unknown target node '%s' — choice target reverted" % after, true)
+		edit.text = before
+		return
+	_run_action("Retarget choice",
+		"_ur_link", {"from_id": node_id, "port": choice_index + 1, "to_id": after},
+		"_ur_link", {"from_id": node_id, "port": choice_index + 1, "to_id": before})
+
+
+# --- markup helpers (inline text fields) ---
+
+
+## Inserts a [var=…] tag at the caret; a selection becomes the variable name.
+## Public so tests (and future toolbar UI) can call it without key events.
+func insert_var_markup(control: Control) -> void:
+	var name := _selected_field_text(control)
+	_replace_field_selection(control, "[var=%s]" % name, 1 if name == "" else 0)
+
+
+## Wraps the selection in [color=…][/color] (empty selection: caret lands
+## between the tags).
+func wrap_color_markup(control: Control) -> void:
+	var selection := _selected_field_text(control)
+	var inserted := "[color=%s]%s[/color]" % [MARKUP_COLOR_DEFAULT, selection]
+	_replace_field_selection(control, inserted, "[/color]".length() if selection == "" else 0)
+
+
+func _wire_markup_keys(control: Control) -> void:
+	control.gui_input.connect(_on_markup_key.bind(control))
+
+
+func _on_markup_key(event: InputEvent, control: Control) -> void:
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return
+	if not (key.is_command_or_control_pressed() and key.shift_pressed) or key.alt_pressed:
+		return
+	match key.keycode:
+		KEY_V:
+			insert_var_markup(control)
+		KEY_C:
+			wrap_color_markup(control)
+		_:
+			return
+	control.accept_event()
+
+
+func _selected_field_text(control: Control) -> String:
+	if control is TextEdit:
+		return (control as TextEdit).get_selected_text()
+	var edit := control as LineEdit
+	if edit == null or not edit.has_selection():
+		return ""
+	return edit.text.substr(edit.get_selection_from_column(),
+		edit.get_selection_to_column() - edit.get_selection_from_column())
+
+
+## Replaces the selection (or inserts at the caret) and parks the caret
+## `caret_back` characters before the end of the inserted text. `inserted`
+## must be single-line (markup tags are).
+func _replace_field_selection(control: Control, inserted: String, caret_back: int) -> void:
+	if control is TextEdit:
+		var text_edit := control as TextEdit
+		if text_edit.has_selection():
+			text_edit.delete_selection()
+		text_edit.insert_text_at_caret(inserted)
+		text_edit.set_caret_column(text_edit.get_caret_column() - caret_back)
+	elif control is LineEdit:
+		var edit := control as LineEdit
+		if edit.has_selection():
+			var from := edit.get_selection_from_column()
+			edit.delete_text(from, edit.get_selection_to_column())
+			edit.caret_column = from
+		edit.insert_text_at_caret(inserted)
+		edit.caret_column -= caret_back
+
+
+# --- choice auto-numbering ---
+
+
+## Toggles "1. ", "2. ", … prefixes on the selected node's choice texts
+## ("1.2.3" toolbar button / Ctrl+Shift+N on the canvas). One undo step.
+func auto_number_selected_choices() -> void:
+	if _dialogue == null:
+		return
+	var selection := _selected_graph_names()
+	if selection.size() != 1:
+		_set_status("select exactly one node to number its choices", true)
+		return
+	var node_id: String = _gname_to_id.get(str(selection[0]), "")
+	var node := _dialogue.get_node_by_id(node_id)
+	if node == null:
+		return
+	var before := _choice_texts(node)
+	if before.is_empty():
+		_set_status("node '%s' has no choices to number" % node_id, true)
+		return
+	var after := GraphModel.toggle_choice_numbering(before)
+	if after == before:
+		return
+	_run_action("Auto-number choices",
+		"_ur_choice_texts", {"node_id": node_id, "texts": after},
+		"_ur_choice_texts", {"node_id": node_id, "texts": before})
+	_set_status("numbered %d choice(s) on '%s'" % [after.size(), node_id])
+
+
+func _choice_texts(node: NarrativeDialogueNode) -> PackedStringArray:
+	var texts := PackedStringArray()
+	for choice in node.choices:
+		texts.append(choice.text if choice != null else "")
+	return texts
+
+
+func _on_graph_gui_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo:
+		return
+	if key.is_command_or_control_pressed() and key.shift_pressed and not key.alt_pressed \
+			and key.keycode == KEY_N:
+		auto_number_selected_choices()
+		_graph.accept_event()
+
+
 func _refresh_connections() -> void:
 	_graph.clear_connections()
 	if _dialogue == null:
@@ -417,13 +596,6 @@ func _update_start_styling() -> void:
 		if child is GraphNode:
 			var node_id: String = _gname_to_id.get(str(child.name), "")
 			child.title = ("▶ " + node_id) if node_id == _dialogue.start_node_id else node_id
-
-
-func _ellipsis(text: String, max_length: int) -> String:
-	var single_line := text.replace("\n", " ")
-	if single_line.length() <= max_length:
-		return single_line
-	return single_line.substr(0, maxi(max_length - 1, 1)) + "…"
 
 
 ## Badges that flag fields edited only via the Inspector (conditions/actions/
@@ -594,6 +766,8 @@ func _ur_link(payload: Dictionary) -> void:
 		GraphModel.set_next(_dialogue, str(payload.from_id), str(payload.to_id))
 	else:
 		GraphModel.set_choice_target(_dialogue, str(payload.from_id), port - 1, str(payload.to_id))
+		# keep the inline target field in sync (covers port drags AND undo)
+		_sync_field_text(str(payload.from_id), "choice_target_%d" % (port - 1), str(payload.to_id))
 	_refresh_connections()
 	_mark_dirty()
 
@@ -627,15 +801,47 @@ func _ur_set_field(payload: Dictionary) -> void:
 		node.speaker_id = value
 	elif field == "text":
 		node.text = value
-	var gname: String = _id_to_gname.get(str(payload.node_id), "")
-	if gname != "" and _graph.has_node(NodePath(gname)):
-		var gnode := _graph.get_node(NodePath(gname)) as GraphNode
-		var key := "speaker_edit" if field == "speaker" else "text_edit"
-		if gnode.has_meta(key):
-			var control: Control = gnode.get_meta(key)
-			if is_instance_valid(control) and control.text != value:
-				control.text = value
+	_sync_field_text(str(payload.node_id), "speaker_edit" if field == "speaker" else "text_edit", value)
 	_mark_dirty()
+
+
+## Sets one choice's text and syncs the on-screen field (same no-rebuild rule).
+func _ur_choice_text(payload: Dictionary) -> void:
+	var node := _dialogue.get_node_by_id(str(payload.node_id))
+	var index := int(payload.index)
+	if node == null or index < 0 or index >= node.choices.size() or node.choices[index] == null:
+		return
+	node.choices[index].text = str(payload.value)
+	_sync_field_text(str(payload.node_id), "choice_text_%d" % index, str(payload.value))
+	_mark_dirty()
+
+
+## Sets ALL choice texts of a node (auto-numbering do/undo payload).
+func _ur_choice_texts(payload: Dictionary) -> void:
+	var node := _dialogue.get_node_by_id(str(payload.node_id))
+	if node == null:
+		return
+	var texts: PackedStringArray = payload.texts
+	for i in mini(texts.size(), node.choices.size()):
+		if node.choices[i] == null:
+			continue
+		node.choices[i].text = texts[i]
+		_sync_field_text(str(payload.node_id), "choice_text_%d" % i, texts[i])
+	_mark_dirty()
+
+
+## Pushes a value into an inline field on the canvas, if that node/field is
+## currently on screen.
+func _sync_field_text(node_id: String, meta_key: String, value: String) -> void:
+	var gname: String = _id_to_gname.get(node_id, "")
+	if gname == "" or not _graph.has_node(NodePath(gname)):
+		return
+	var gnode := _graph.get_node(NodePath(gname)) as GraphNode
+	if not gnode.has_meta(meta_key):
+		return
+	var control: Control = gnode.get_meta(meta_key)
+	if is_instance_valid(control) and control.text != value:
+		control.text = value
 
 
 func _ur_rename(payload: Dictionary) -> void:

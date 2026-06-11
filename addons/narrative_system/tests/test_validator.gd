@@ -137,3 +137,17 @@ func test_standard_fixture_reports_known_smells() -> void:
 	assert_true(_has_issue(issues, "broken_link", "dialogue 'broken'"), "missing next target")
 	assert_true(_has_issue(issues, "suspicious_loop", "dialogue 'cycle'"), "condition-skip cycle")
 	assert_true(_has_issue(issues, "missing_localization_key", "dialogue 'loctest'"))
+
+
+func test_markup_unknown_variable_warning() -> void:
+	var db := DbFactory.clean()
+	db.dialogues[0].nodes[0].text = "Have [var=gold] and [var=ghost_var]"
+	db.dialogues[0].nodes[1].choices[0].text = "Pay [var=other_ghost]"
+	var issues := _validate(db)
+	assert_true(_has_issue(issues, "markup_unknown_variable", "node 'h1' > text"))
+	assert_true(_has_issue(issues, "markup_unknown_variable", "choice 'more'"))
+	assert_eq(NarrativeValidator.count_severity(issues, "error"), 0, "markup issues are warnings")
+	# declared variables (and malformed tags) produce no markup issues
+	db.dialogues[0].nodes[0].text = "Have [var=gold] and [var=broken"
+	db.dialogues[0].nodes[1].choices[0].text = "ok"
+	assert_false(_has_issue(_validate(db), "markup_unknown_variable"))

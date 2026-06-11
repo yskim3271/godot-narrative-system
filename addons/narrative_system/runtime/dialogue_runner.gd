@@ -21,6 +21,7 @@ signal expression_changed(character_id: String, expression: String)
 enum Phase { IDLE, AT_LINE, AT_CHOICES }
 
 const Evaluator := preload("dsl/evaluator.gd")
+const TextMarkup := preload("text_markup.gd")
 
 var _database: NarrativeDatabase
 var _state: NarrativeState
@@ -397,19 +398,19 @@ func _drain() -> void:
 
 
 func _resolve_node_text(node: NarrativeDialogueNode) -> String:
-	return _localization.resolve(
+	return TextMarkup.substitute_variables(_localization.resolve(
 		node.localized_text_key,
 		NarrativeLocalizationManager.node_text_key(_dialogue.id, node.id),
 		node.text,
-	)
+	), _state)
 
 
 func _resolve_choice_text(choice: NarrativeChoice) -> String:
-	return _localization.resolve(
+	return TextMarkup.substitute_variables(_localization.resolve(
 		choice.localized_text_key,
 		NarrativeLocalizationManager.choice_text_key(_dialogue.id, _node.id, choice.id),
 		choice.text,
-	)
+	), _state)
 
 
 ## Called by the context when the language changes: re-presents the current

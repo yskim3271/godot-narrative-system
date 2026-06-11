@@ -154,6 +154,38 @@ static func create_dialogue(db: NarrativeDatabase, dialogue_id := "") -> Narrati
 	return dialogue
 
 
+# --- choice text helpers ---
+
+
+## Strips a leading "N. " numbering prefix ("12.", "3.  " etc.), if any.
+static func strip_number_prefix(text: String) -> String:
+	var i := 0
+	while i < text.length() and text[i] >= "0" and text[i] <= "9":
+		i += 1
+	if i == 0 or i >= text.length() or text[i] != ".":
+		return text
+	i += 1
+	while i < text.length() and text[i] == " ":
+		i += 1
+	return text.substr(i)
+
+
+## Returns the texts with "1. ", "2. ", … numbering applied — or with the
+## numbering removed when every text already carries its correct number
+## (toggle semantics, so one shortcut both applies and clears).
+static func toggle_choice_numbering(texts: PackedStringArray) -> PackedStringArray:
+	var all_numbered := texts.size() > 0
+	for i in texts.size():
+		if texts[i] != "%d. %s" % [i + 1, strip_number_prefix(texts[i])]:
+			all_numbered = false
+			break
+	var result := PackedStringArray()
+	for i in texts.size():
+		var bare := strip_number_prefix(texts[i])
+		result.append(bare if all_numbered else "%d. %s" % [i + 1, bare])
+	return result
+
+
 # --- links ---
 
 

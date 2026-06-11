@@ -200,6 +200,68 @@ func test_rename_to_duplicate_is_rejected() -> void:
 	assert_true(branch.has_node_id("good"), "node keeps its id")
 
 
+func test_choice_text_inline_edit_undo_redo() -> void:
+	var ctrl := _control("q", "choice_text_0")
+	ctrl.set_meta("edit_before", "choice stay")
+	ctrl.text = "Stay calm"
+	editor._commit_choice_text(ctrl, "q", 0)
+	assert_eq(branch.get_node_by_id("q").choices[0].text, "Stay calm")
+	undo.undo_last()
+	assert_eq(branch.get_node_by_id("q").choices[0].text, "choice stay", "choice text undone")
+	assert_eq(ctrl.text, "choice stay", "on-screen field synced to the undone value")
+	undo.redo_last()
+	assert_eq(branch.get_node_by_id("q").choices[0].text, "Stay calm", "redo reapplies")
+
+
+func test_choice_target_inline_edit_undo() -> void:
+	var ctrl := _control("q", "choice_target_0") as LineEdit
+	assert_eq(ctrl.text, "good")
+	ctrl.set_meta("edit_before", "good")
+	ctrl.text = "rich"
+	editor._commit_choice_target(ctrl, "q", 0)
+	assert_eq(branch.get_node_by_id("q").choices[0].target_node_id, "rich")
+	undo.undo_last()
+	assert_eq(branch.get_node_by_id("q").choices[0].target_node_id, "good")
+	assert_eq(ctrl.text, "good", "undo restores the inline field too")
+	# empty target = "end the dialogue": connection disappears from the canvas
+	ctrl.set_meta("edit_before", "good")
+	ctrl.text = ""
+	editor._commit_choice_target(ctrl, "q", 0)
+	assert_eq(branch.get_node_by_id("q").choices[0].target_node_id, "")
+	assert_eq(editor.get_graph_edit().get_connection_list().size(), 2)
+	undo.undo_last()
+	assert_eq(editor.get_graph_edit().get_connection_list().size(), 3, "undo restores the connection")
+
+
+func test_choice_target_unknown_rejected() -> void:
+	var ctrl := _control("q", "choice_target_1") as LineEdit
+	ctrl.set_meta("edit_before", "rich")
+	ctrl.text = "nowhere"
+	editor._commit_choice_target(ctrl, "q", 1)
+	assert_eq(undo.actions.size(), 0, "rejected target creates no action")
+	assert_eq(ctrl.text, "rich", "field reverts to the previous target")
+	assert_eq(branch.get_node_by_id("q").choices[1].target_node_id, "rich")
+
+
+func test_auto_number_choices_undo_and_toggle() -> void:
+	editor.get_graph_edit().get_node(NodePath(String(editor.graph_name_for("q")))).selected = true
+	editor.auto_number_selected_choices()
+	var q := branch.get_node_by_id("q")
+	assert_eq(q.choices[0].text, "1. choice stay")
+	assert_eq(q.choices[2].text, "3. choice secret")
+	assert_eq(_control("q", "choice_text_1").text, "2. choice bribe", "fields synced")
+	undo.undo_last()
+	assert_eq(q.choices[0].text, "choice stay", "numbering undone")
+	assert_eq(_control("q", "choice_text_0").text, "choice stay")
+	undo.redo_last()
+	assert_eq(q.choices[0].text, "1. choice stay")
+	# a second application toggles the numbering off (its own undo step)
+	editor.auto_number_selected_choices()
+	assert_eq(q.choices[0].text, "choice stay")
+	assert_eq(q.choices[1].text, "choice bribe")
+	assert_eq(undo.actions.size(), 2)
+
+
 func test_noop_gestures_create_no_actions() -> void:
 	# connecting to the same target, disconnecting an empty port, re-setting
 	# the same start node: no history pollution

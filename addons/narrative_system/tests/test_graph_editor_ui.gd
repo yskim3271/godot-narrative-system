@@ -139,6 +139,51 @@ func test_fills_container_parent_so_graph_gets_height() -> void:
 	await wait_frame()
 
 
+func test_choice_inline_fields_and_target_sync_on_drag() -> void:
+	var q := _gnode("q")
+	assert_true(q.has_meta("choice_text_0"), "choice text is inline-editable")
+	assert_true(q.has_meta("choice_target_0"), "choice target is inline-editable")
+	assert_eq((q.get_meta("choice_text_0") as LineEdit).text, "choice stay", "raw authoring text shown")
+	assert_eq((q.get_meta("choice_target_0") as LineEdit).text, "good")
+	# rewiring by port drag pushes the new target into the inline field
+	editor._on_connection_request(editor.graph_name_for("q"), 1, editor.graph_name_for("rich"), 0)
+	assert_eq((q.get_meta("choice_target_0") as LineEdit).text, "rich")
+	# standalone (no undo manager) inline commit still mutates the model
+	var ctext: LineEdit = q.get_meta("choice_text_0")
+	ctext.set_meta("edit_before", "choice stay")
+	ctext.text = "renamed inline"
+	editor._commit_choice_text(ctext, "q", 0)
+	assert_eq(db.get_dialogue("branch").get_node_by_id("q").choices[0].text, "renamed inline")
+
+
+func test_markup_insert_helpers() -> void:
+	# TextEdit: a selection becomes the variable name
+	var text_edit: TextEdit = _gnode("good").get_meta("text_edit")
+	text_edit.text = "good end"
+	text_edit.select(0, 0, 0, 4)
+	editor.insert_var_markup(text_edit)
+	assert_eq(text_edit.text, "[var=good] end")
+	# TextEdit: no selection parks the caret before the closing bracket
+	text_edit.text = ""
+	text_edit.set_caret_line(0)
+	text_edit.set_caret_column(0)
+	editor.insert_var_markup(text_edit)
+	assert_eq(text_edit.text, "[var=]")
+	assert_eq(text_edit.get_caret_column(), 5, "caret sits before ']' ready for the name")
+	# LineEdit: color wrap without selection lands the caret between the tags
+	var ctext: LineEdit = _gnode("q").get_meta("choice_text_0")
+	ctext.text = ""
+	ctext.caret_column = 0
+	editor.wrap_color_markup(ctext)
+	assert_eq(ctext.text, "[color=yellow][/color]")
+	assert_eq(ctext.caret_column, "[color=yellow]".length())
+	# LineEdit: wrapping a selection keeps it as the tag body
+	ctext.text = "pay"
+	ctext.select(0, 3)
+	editor.wrap_color_markup(ctext)
+	assert_eq(ctext.text, "[color=yellow]pay[/color]")
+
+
 func test_switching_dialogues_rebuilds() -> void:
 	assert_true(editor.open_dialogue("linear"))
 	assert_eq(_graph_nodes().size(), 3)

@@ -59,6 +59,19 @@ sequencer_commands:
 ```
 시퀀스는 대사 표시와 **병행** 실행되며, 플레이어가 advance하면 자동 취소됩니다. → [sequencer.md](sequencer.md)
 
+## 인라인 마크업
+
+대사/선택지 텍스트(그리고 바크·알림)에 `[var=변수명]`을 쓰면 표시 시점의 변수 값으로 치환됩니다. 로컬라이징 해석 **후** 적용되므로 번역문에도 그대로 쓸 수 있습니다.
+
+```
+text = "통행료는 [var=toll]골드다. 지금 [var=gold]골드 갖고 있군."
+```
+
+- 미선언 변수는 태그가 **원문 그대로** 남고(게임 화면에서 바로 보임) 검증기가 `markup_unknown_variable` 경고로 잡습니다.
+- 치환된 값은 다시 스캔하지 않습니다(재귀 없음).
+- `[color=...]`, `[b]` 등 **BBCode**는 치환 없이 통과 — 기본 DialogueBox의 RichTextLabel이 렌더링합니다.
+- 그래프 에디터의 텍스트 칸에서 **Ctrl+Shift+V**(`[var=…]` 삽입) / **Ctrl+Shift+C**(`[color]` 감싸기) 단축키를 지원합니다. → [graph_editor.md](graph_editor.md)
+
 ## 함정과 요령
 
 1. **Inspector 배열 복제 = 인스턴스 공유.** 노드/선택지를 복제한 뒤 한쪽을 고치면 양쪽이 같이 바뀝니다. 복제 후 우클릭 → **Make Unique**. (검증기의 `shared_resource_instance` 에러)

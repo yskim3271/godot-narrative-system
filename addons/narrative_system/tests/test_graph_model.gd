@@ -189,3 +189,23 @@ func test_position_metadata_survives_tres_roundtrip() -> void:
 	assert_not_null(loaded)
 	assert_eq(GraphModel.get_position(loaded.get_node_by_id("q")), Vector2(123, 456))
 	DirAccess.remove_absolute("user://t_graph_roundtrip.tres")
+
+
+func test_strip_number_prefix() -> void:
+	assert_eq(GraphModel.strip_number_prefix("1. go"), "go")
+	assert_eq(GraphModel.strip_number_prefix("12.  spaced"), "spaced")
+	assert_eq(GraphModel.strip_number_prefix("3.dotted"), "dotted")
+	assert_eq(GraphModel.strip_number_prefix("no prefix"), "no prefix")
+	assert_eq(GraphModel.strip_number_prefix("1x. not a prefix"), "1x. not a prefix")
+	assert_eq(GraphModel.strip_number_prefix("42"), "42", "digits without a dot stay put")
+
+
+func test_toggle_choice_numbering() -> void:
+	var texts := PackedStringArray(["stay", "2. bribe", "go"])
+	var numbered := GraphModel.toggle_choice_numbering(texts)
+	assert_eq(numbered, PackedStringArray(["1. stay", "2. bribe", "3. go"]),
+		"stale prefixes are normalized, not stacked")
+	assert_eq(GraphModel.toggle_choice_numbering(numbered),
+		PackedStringArray(["stay", "bribe", "go"]),
+		"second application removes the numbering (toggle)")
+	assert_eq(GraphModel.toggle_choice_numbering(PackedStringArray()), PackedStringArray())

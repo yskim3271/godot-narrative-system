@@ -13,6 +13,7 @@ extends RefCounted
 ## missing localization keys, suspicious loops, id charset).
 
 const Parser := preload("../runtime/dsl/parser.gd")
+const TextMarkup := preload("../runtime/text_markup.gd")
 
 ## Kept in sync with dsl/builtin_functions.gd.
 const BUILTIN_FUNCTIONS: PackedStringArray = [
@@ -173,6 +174,7 @@ func _check_one_dialogue(dialogue: NarrativeDialogue) -> void:
 		if node.next_node_id != "" and not node_ids.has(node.next_node_id):
 			_error("broken_link", "next_node_id '%s' does not exist" % node.next_node_id, where)
 		_check_loc_key(node.localized_text_key, where)
+		_check_markup(node.text, where + " > text")
 		_check_dsl(node.conditions, "condition", where + " > conditions")
 		_check_dsl(node.actions, "actions", where + " > actions")
 		_check_dsl(node.sequencer_commands, "sequence", where + " > sequence")
@@ -193,6 +195,7 @@ func _check_one_dialogue(dialogue: NarrativeDialogue) -> void:
 			if choice.target_node_id != "" and not node_ids.has(choice.target_node_id):
 				_error("broken_link", "choice target '%s' does not exist" % choice.target_node_id, choice_where)
 			_check_loc_key(choice.localized_text_key, choice_where)
+			_check_markup(choice.text, choice_where + " > text")
 			_check_dsl(choice.condition, "condition", choice_where + " > condition")
 			_check_dsl(choice.actions, "actions", choice_where + " > actions")
 
@@ -335,6 +338,12 @@ func _lit_string(args: Array, index: int) -> String:
 
 
 # --- shared helpers ---
+
+
+func _check_markup(text: String, where: String) -> void:
+	for name in TextMarkup.find_variable_tags(text):
+		if not _declared_vars.has(name):
+			_warning("markup_unknown_variable", "[var=%s] references an undeclared variable (the tag stays verbatim at runtime)" % name, where)
 
 
 func _check_loc_key(key: String, where: String) -> void:
