@@ -206,6 +206,20 @@ func get_tracked_quests() -> Array[String]:
 	return result
 
 
+## Current progress count of one objective (initial value when the quest
+## has not started, 0 for unknown ids).
+func get_objective_count(quest_id: String, objective_id: String) -> int:
+	var entry: Variant = _state.quest_states.get(quest_id)
+	if entry != null and entry.objectives.has(objective_id):
+		return int(entry.objectives[objective_id].count)
+	var quest := _database.get_quest(quest_id)
+	if quest != null:
+		var objective := quest.get_objective_by_id(objective_id)
+		if objective != null:
+			return clampi(objective.initial_count, 0, objective.target_count)
+	return 0
+
+
 func are_all_objectives_completed(quest_id: String) -> bool:
 	var quest := _database.get_quest(quest_id)
 	if quest == null:

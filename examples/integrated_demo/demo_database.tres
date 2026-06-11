@@ -1,0 +1,344 @@
+[gd_resource type="Resource" script_class="NarrativeDatabase" format=3]
+
+[ext_resource type="Script" path="res://addons/narrative_system/resources/character_resource.gd" id="1_sulo8"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/dialogue_resource.gd" id="2_l11le"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/dialogue_node_resource.gd" id="3_vs55d"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/choice_resource.gd" id="4_1dswq"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/localization_table_resource.gd" id="5_mheqa"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/quest_resource.gd" id="6_kmg6b"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/quest_objective_resource.gd" id="7_fo4aq"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/narrative_database.gd" id="8_yndy5"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/narrative_settings.gd" id="9_gi5v6"]
+[ext_resource type="Script" path="res://addons/narrative_system/resources/variable_resource.gd" id="10_c5oaf"]
+
+[sub_resource type="Gradient" id="Gradient_vsaur"]
+colors = PackedColorArray(0.93, 0.74, 0.32, 1, 0.45, 0.33, 0.1, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_vews2"]
+gradient = SubResource("Gradient_vsaur")
+width = 96
+height = 96
+fill = 1
+fill_from = Vector2(0.5, 0.4)
+fill_to = Vector2(1, 1)
+
+[sub_resource type="Gradient" id="Gradient_wqpyk"]
+colors = PackedColorArray(0.88, 0.18, 0.18, 1, 0.3, 0.05, 0.05, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_78c7p"]
+gradient = SubResource("Gradient_wqpyk")
+width = 96
+height = 96
+fill = 1
+fill_from = Vector2(0.5, 0.4)
+fill_to = Vector2(1, 1)
+
+[sub_resource type="Gradient" id="Gradient_0vqci"]
+colors = PackedColorArray(0.72, 0.34, 0.3, 1, 0.32, 0.13, 0.12, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_kufcb"]
+gradient = SubResource("Gradient_0vqci")
+width = 96
+height = 96
+fill = 1
+fill_from = Vector2(0.5, 0.4)
+fill_to = Vector2(1, 1)
+
+[sub_resource type="Resource" id="Resource_2whh0"]
+script = ExtResource("1_sulo8")
+id = "guard"
+display_name = "경비병"
+portrait = SubResource("GradientTexture2D_kufcb")
+expressions = Dictionary[String, Texture2D]({
+"angry": SubResource("GradientTexture2D_78c7p"),
+"happy": SubResource("GradientTexture2D_vews2")
+})
+
+[sub_resource type="Gradient" id="Gradient_nlsvx"]
+colors = PackedColorArray(0.3, 0.5, 0.85, 1, 0.1, 0.18, 0.35, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_lmv82"]
+gradient = SubResource("Gradient_nlsvx")
+width = 96
+height = 96
+fill = 1
+fill_from = Vector2(0.5, 0.4)
+fill_to = Vector2(1, 1)
+
+[sub_resource type="Resource" id="Resource_8vncj"]
+script = ExtResource("1_sulo8")
+id = "player"
+display_name = "나"
+portrait = SubResource("GradientTexture2D_lmv82")
+
+[sub_resource type="Resource" id="Resource_42r8o"]
+script = ExtResource("3_vs55d")
+id = "g_return"
+speaker_id = "guard"
+text = "또 자네군. 무슨 일이지?"
+conditions = "has_seen(\"guard_talk\", \"g_first\")"
+next_node_id = "g_first"
+
+[sub_resource type="Resource" id="Resource_lq8xv"]
+script = ExtResource("3_vs55d")
+id = "g_first"
+speaker_id = "guard"
+text = "처음 보는 얼굴이군. 이 마을엔 무슨 일로 왔나?"
+conditions = "not has_seen(\"guard_talk\", \"g_first\")"
+sequencer_commands = "set_expression(\"guard\", \"angry\")"
+next_node_id = "g_menu"
+
+[sub_resource type="Resource" id="Resource_gxiqn"]
+script = ExtResource("4_1dswq")
+id = "c_quest"
+text = "일거리가 있나?"
+condition = "quest_state(\"rat_hunt\") == \"inactive\""
+target_node_id = "q_give"
+
+[sub_resource type="Resource" id="Resource_ryf5l"]
+script = ExtResource("4_1dswq")
+id = "c_progress"
+text = "쥐는 잡는 중이야."
+condition = "is_quest_active(\"rat_hunt\") and objective_count(\"rat_hunt\", \"kill_rats\") < 5"
+target_node_id = "q_progress"
+
+[sub_resource type="Resource" id="Resource_iyrwl"]
+script = ExtResource("4_1dswq")
+id = "c_done"
+text = "쥐를 모두 처리했네."
+condition = "is_quest_active(\"rat_hunt\") and objective_count(\"rat_hunt\", \"kill_rats\") >= 5"
+target_node_id = "q_done"
+
+[sub_resource type="Resource" id="Resource_agese"]
+script = ExtResource("4_1dswq")
+id = "c_bribe"
+text = "통행료를 내겠네. (50골드)"
+condition = "gold >= 50"
+show_disabled = true
+actions = "gold -= 50
+met_guard = true"
+target_node_id = "q_bribe"
+
+[sub_resource type="Resource" id="Resource_8cf14"]
+script = ExtResource("4_1dswq")
+id = "c_bye"
+text = "아무것도 아닐세."
+
+[sub_resource type="Resource" id="Resource_hbcdb"]
+script = ExtResource("3_vs55d")
+id = "g_menu"
+speaker_id = "guard"
+text = "용건을 말해보게."
+sequencer_commands = "set_expression(\"guard\", \"\")"
+choices = Array[ExtResource("4_1dswq")]([SubResource("Resource_gxiqn"), SubResource("Resource_ryf5l"), SubResource("Resource_iyrwl"), SubResource("Resource_agese"), SubResource("Resource_8cf14")])
+
+[sub_resource type="Resource" id="Resource_cfwtd"]
+script = ExtResource("3_vs55d")
+id = "q_give"
+speaker_id = "guard"
+text = "지하실에 쥐가 들끓고 있네. 다섯 마리만 잡아주게."
+actions = "start_quest(\"rat_hunt\")
+alert(\"ui.alert.quest_started\")"
+sequencer_commands = "set_expression(\"guard\", \"happy\")
+play_animation(\"guard\", \"wave\")
+wait(0.5)
+focus_camera(\"guard\", 0.4)
+emit_signal(\"quest_given\")
+wait(0.6)
+move_camera(0, 0, 0.4)"
+
+[sub_resource type="Resource" id="Resource_b7wah"]
+script = ExtResource("3_vs55d")
+id = "q_progress"
+speaker_id = "guard"
+text = "서둘러 주게. 쥐들이 곡식을 다 먹어치우고 있어."
+
+[sub_resource type="Resource" id="Resource_j5e4g"]
+script = ExtResource("3_vs55d")
+id = "q_done"
+speaker_id = "guard"
+text = "훌륭하군! 약속한 보수일세."
+actions = "complete_quest(\"rat_hunt\")
+alert(\"ui.alert.quest_done\")"
+sequencer_commands = "set_expression(\"guard\", \"happy\")
+play_animation(\"guard\", \"wave\")"
+
+[sub_resource type="Resource" id="Resource_442bk"]
+script = ExtResource("3_vs55d")
+id = "q_bribe"
+speaker_id = "guard"
+text = "흠… 좋아, 지나가게."
+sequencer_commands = "set_expression(\"guard\", \"happy\")"
+
+[sub_resource type="Resource" id="Resource_fqbr7"]
+script = ExtResource("2_l11le")
+id = "guard_talk"
+title = "경비병 대화"
+start_node_id = "g_return"
+nodes = Array[ExtResource("3_vs55d")]([SubResource("Resource_42r8o"), SubResource("Resource_lq8xv"), SubResource("Resource_hbcdb"), SubResource("Resource_cfwtd"), SubResource("Resource_b7wah"), SubResource("Resource_j5e4g"), SubResource("Resource_442bk")])
+
+[sub_resource type="Resource" id="Resource_nadp7"]
+script = ExtResource("5_mheqa")
+id = "demo"
+entries = Dictionary[String, Dictionary]({
+"bark.idle.1": {
+"en": "Peaceful day, as always.",
+"ko": "오늘도 평화롭군."
+},
+"bark.idle.2": {
+"en": "I hear noises from the cellar...",
+"ko": "지하실 쪽에서 소리가 나는군…"
+},
+"bark.idle.3": {
+"en": "Stay alert.",
+"ko": "경계를 늦추지 말 것."
+},
+"char.guard.name": {
+"en": "Guard"
+},
+"char.player.name": {
+"en": "Me"
+},
+"dlg.guard_talk.g_first.text": {
+"en": "A new face. What brings you to this town?"
+},
+"dlg.guard_talk.g_menu.choice.c_bribe": {
+"en": "I will pay the toll. (50 gold)"
+},
+"dlg.guard_talk.g_menu.choice.c_bye": {
+"en": "Never mind."
+},
+"dlg.guard_talk.g_menu.choice.c_done": {
+"en": "The rats are dealt with."
+},
+"dlg.guard_talk.g_menu.choice.c_progress": {
+"en": "Still hunting the rats."
+},
+"dlg.guard_talk.g_menu.choice.c_quest": {
+"en": "Got any work?"
+},
+"dlg.guard_talk.g_menu.text": {
+"en": "State your business."
+},
+"dlg.guard_talk.g_return.text": {
+"en": "You again. What is it?"
+},
+"dlg.guard_talk.q_bribe.text": {
+"en": "Hm... fine, move along."
+},
+"dlg.guard_talk.q_done.text": {
+"en": "Splendid! Here is the pay I promised."
+},
+"dlg.guard_talk.q_give.text": {
+"en": "The cellar is crawling with rats. Deal with five of them, will you?"
+},
+"dlg.guard_talk.q_progress.text": {
+"en": "Hurry. They are eating through our grain."
+},
+"quest.rat_hunt.desc": {
+"en": "The guard's request: clear out the rats infesting the cellar."
+},
+"quest.rat_hunt.obj.kill_rats": {
+"en": "Clear cellar rats"
+},
+"quest.rat_hunt.title": {
+"en": "Rat Hunt"
+},
+"ui.alert.loaded": {
+"en": "Loaded",
+"ko": "불러옴"
+},
+"ui.alert.quest_done": {
+"en": "Quest completed: Rat Hunt",
+"ko": "퀘스트 완료: 쥐 사냥"
+},
+"ui.alert.quest_started": {
+"en": "Quest started: Rat Hunt",
+"ko": "퀘스트 시작: 쥐 사냥"
+},
+"ui.alert.rat": {
+"en": "Rat down!",
+"ko": "쥐 처치!"
+},
+"ui.alert.reward_gold": {
+"en": "Reward: 100 gold",
+"ko": "보상: 100 골드"
+},
+"ui.alert.saved": {
+"en": "Saved (F9 to load)",
+"ko": "저장됨 (F9로 불러오기)"
+},
+"ui.demo.gold": {
+"en": "Gold",
+"ko": "골드"
+},
+"ui.demo.hints": {
+"en": "Move: arrows · E: talk · J: quest log · K: KO/EN · F5: save · F9: load",
+"ko": "이동: 방향키 · E: 대화 · J: 퀘스트 로그 · K: 한/영 · F5: 저장 · F9: 불러오기"
+},
+"ui.demo.prompt": {
+"en": "[E] Talk",
+"ko": "[E] 대화하기"
+},
+"ui.quest_log.active": {
+"en": "Active",
+"ko": "진행 중"
+},
+"ui.quest_log.completed": {
+"en": "Completed",
+"ko": "완료"
+},
+"ui.quest_log.failed": {
+"en": "Failed",
+"ko": "실패"
+},
+"ui.quest_log.title": {
+"en": "Quests",
+"ko": "퀘스트"
+},
+"ui.quest_log.track": {
+"en": "Show in tracker",
+"ko": "트래커에 표시"
+}
+})
+
+[sub_resource type="Resource" id="Resource_nesgo"]
+script = ExtResource("7_fo4aq")
+id = "kill_rats"
+description = "지하실 쥐 처치"
+target_count = 5
+
+[sub_resource type="Resource" id="Resource_8r0l4"]
+script = ExtResource("6_kmg6b")
+id = "rat_hunt"
+title = "쥐 사냥"
+description = "경비병의 부탁: 지하실에 들끓는 쥐를 정리하자."
+objectives = Array[ExtResource("7_fo4aq")]([SubResource("Resource_nesgo")])
+prerequisites = PackedStringArray()
+rewards = "gold += 100
+alert(\"ui.alert.reward_gold\")"
+
+[sub_resource type="Resource" id="Resource_bmgsp"]
+script = ExtResource("9_gi5v6")
+default_language = "ko"
+declared_external_functions = PackedStringArray()
+
+[sub_resource type="Resource" id="Resource_qw25q"]
+script = ExtResource("10_c5oaf")
+id = "gold"
+type = 1
+default_int = 30
+
+[sub_resource type="Resource" id="Resource_u35jv"]
+script = ExtResource("10_c5oaf")
+id = "met_guard"
+type = 0
+
+[resource]
+script = ExtResource("8_yndy5")
+characters = Array[ExtResource("1_sulo8")]([SubResource("Resource_2whh0"), SubResource("Resource_8vncj")])
+dialogues = Array[ExtResource("2_l11le")]([SubResource("Resource_fqbr7")])
+quests = Array[ExtResource("6_kmg6b")]([SubResource("Resource_8r0l4")])
+variables = Array[ExtResource("10_c5oaf")]([SubResource("Resource_qw25q"), SubResource("Resource_u35jv")])
+localization_tables = Array[ExtResource("5_mheqa")]([SubResource("Resource_nadp7")])
+settings = SubResource("Resource_bmgsp")

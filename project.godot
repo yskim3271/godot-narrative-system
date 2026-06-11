@@ -1,6 +1,10 @@
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
 ; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
@@ -8,12 +12,21 @@ config_version=5
 
 config/name="Narrative System for Godot"
 config/description="All-in-one narrative system addon for Godot 4: branching dialogue, quests, save/load, localization, barks, alerts, and a cutscene sequencer."
+run/main_scene="res://examples/integrated_demo/demo.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+Narrative="*res://addons/narrative_system/runtime/narrative.gd"
 
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/narrative_system/plugin.cfg")
+
+[narrative_system]
+
+database_path="res://examples/integrated_demo/demo_database.tres"
 
 [rendering]
 

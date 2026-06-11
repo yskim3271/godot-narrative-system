@@ -17,7 +17,7 @@ const Parser := preload("../runtime/dsl/parser.gd")
 const BUILTIN_FUNCTIONS: PackedStringArray = [
 	"str", "has_seen", "quest_state", "is_quest_active", "is_quest_completed",
 	"is_quest_failed", "start_quest", "complete_quest", "fail_quest",
-	"update_objective", "set_expression", "alert",
+	"update_objective", "objective_count", "set_expression", "alert",
 ]
 ## Kept in sync with runtime/builtin_commands.gd.
 const BUILTIN_COMMANDS: PackedStringArray = [
@@ -29,6 +29,7 @@ const BUILTIN_COMMANDS: PackedStringArray = [
 const QUEST_ID_FUNCTIONS: PackedStringArray = [
 	"quest_state", "is_quest_active", "is_quest_completed", "is_quest_failed",
 	"start_quest", "complete_quest", "fail_quest", "update_objective",
+	"objective_count",
 ]
 
 var _issues: Array[Dictionary] = []
@@ -311,7 +312,7 @@ func _check_call(call_ast: Array, where: String, as_command: bool) -> void:
 		var quest := _db.get_quest(quest_id)
 		if quest == null:
 			_error("unknown_quest_id", "%s('%s') — quest does not exist" % [name, quest_id], where)
-		elif name == "update_objective" and _lit_string(args, 1) != "" and quest.get_objective_by_id(_lit_string(args, 1)) == null:
+		elif name in ["update_objective", "objective_count"] and _lit_string(args, 1) != "" and quest.get_objective_by_id(_lit_string(args, 1)) == null:
 			_error("unknown_objective_id", "quest '%s' has no objective '%s'" % [quest_id, _lit_string(args, 1)], where)
 	if name == "has_seen" and _lit_string(args, 0) != "":
 		var dialogue := _db.get_dialogue(_lit_string(args, 0))

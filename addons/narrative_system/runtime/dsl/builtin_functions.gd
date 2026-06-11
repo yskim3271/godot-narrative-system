@@ -22,6 +22,7 @@ func install(context) -> void:
 	reg.register("complete_quest", fn_complete_quest)
 	reg.register("fail_quest", fn_fail_quest)
 	reg.register("update_objective", fn_update_objective)
+	reg.register("objective_count", fn_objective_count)
 	reg.register("set_expression", fn_set_expression)
 	reg.register("alert", fn_alert)
 
@@ -72,6 +73,11 @@ func fn_fail_quest(quest_id: String) -> bool:
 func fn_update_objective(quest_id: String, objective_id: String, delta := 1.0) -> bool:
 	var quests = _quests("update_objective")
 	return quests != null and quests.update_objective(quest_id, objective_id, int(delta))
+
+
+func fn_objective_count(quest_id: String, objective_id: String) -> int:
+	var quests = _quests()
+	return quests.get_objective_count(quest_id, objective_id) if quests != null else 0
 
 
 func fn_set_expression(character_id: String, expression: String) -> void:

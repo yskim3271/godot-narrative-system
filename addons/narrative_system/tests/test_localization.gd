@@ -83,6 +83,25 @@ func test_runtime_language_switch_represents_current_line() -> void:
 	assert_eq(rec.count("language_changed"), 1, "same language is a no-op")
 
 
+func test_inline_preferred_over_fallback_locale() -> void:
+	# Database authored in Korean (default ko, fallback en); the table only
+	# has an ENGLISH entry for n2. Korean players must see the Korean inline
+	# text — never the fallback language.
+	var db := DbFactory.standard()
+	db.settings = NarrativeSettings.new()
+	db.settings.default_language = "ko"
+	db.settings.fallback_language = "en"
+	db.localization_tables[0].set_text("dlg.linear.n2.text", "en", "second EN")
+	var local_ctx := NarrativeContext.create(db)
+	local_ctx.runner.start_dialogue("linear")
+	local_ctx.runner.advance()  # n2
+	assert_eq(local_ctx.runner.get_current_line_text(), "second", "ko player sees the ko inline, not the en table entry")
+	local_ctx.localization.set_language("en")
+	assert_eq(local_ctx.runner.get_current_line_text(), "second EN", "en player sees the en table entry")
+	local_ctx.runner.end_dialogue()
+	disconnect_all_signals(local_ctx.runner)
+
+
 func test_quest_and_ui_convention_keys() -> void:
 	ctx.localization.set_language("ko")
 	assert_eq(ctx.quests.get_quest_title("rats"), "쥐 사냥")
