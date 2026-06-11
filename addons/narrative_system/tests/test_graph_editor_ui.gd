@@ -190,3 +190,22 @@ func test_switching_dialogues_rebuilds() -> void:
 	assert_eq(editor.get_graph_edit().get_connection_list().size(), 2, "n1->n2->n3 next links")
 	assert_false(editor.open_dialogue("ghost_dialogue"))
 	assert_eq(editor.current_dialogue().id, "linear", "failed open keeps the current dialogue")
+
+
+func test_focus_node_switches_dialogue_and_selects() -> void:
+	assert_true(editor.focus_node("linear", "n2"), "focus from another dialogue")
+	assert_eq(editor.current_dialogue().id, "linear")
+	assert_true(_gnode("n2").selected)
+	assert_false(_gnode("n1").selected, "focus selects exactly one node")
+	assert_true(editor.focus_node("linear", "n3"))
+	assert_false(_gnode("n2").selected, "previous focus target deselected")
+	assert_true(_gnode("n3").selected)
+
+
+func test_focus_node_dialogue_only_and_unknown_targets() -> void:
+	assert_true(editor.focus_node("linear"), "empty node id just opens the dialogue")
+	assert_eq(editor.current_dialogue().id, "linear")
+	assert_false(editor.focus_node("ghost_dialogue"))
+	assert_eq(editor.current_dialogue().id, "linear", "failed focus keeps the current dialogue")
+	assert_false(editor.focus_node("branch", "ghost_node"), "unknown node reports failure")
+	assert_eq(editor.current_dialogue().id, "branch", "the dialogue itself still opened")

@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Built-in sequencer command library (the spec's 13 commands).
 ##

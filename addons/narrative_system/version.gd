@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Central version constants for the Narrative System addon.
 ##

@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Built-in DSL function library.
 ##

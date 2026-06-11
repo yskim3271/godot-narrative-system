@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Whitelist registry of functions callable from the Narrative DSL.
 ##

@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeSequencer
 extends RefCounted
 ## Executes sequencer command lines attached to dialogue nodes

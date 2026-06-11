@@ -151,3 +151,60 @@ func test_markup_unknown_variable_warning() -> void:
 	db.dialogues[0].nodes[0].text = "Have [var=gold] and [var=broken"
 	db.dialogues[0].nodes[1].choices[0].text = "ok"
 	assert_false(_has_issue(_validate(db), "markup_unknown_variable"))
+
+
+func test_parse_where_formats() -> void:
+	var ref := NarrativeValidator.parse_where("dialogue 'd1' > node 'n1' > choice 'c1' > text")
+	assert_eq(ref.category, "dialogue")
+	assert_eq(ref.id, "d1")
+	assert_eq(ref.node, "n1")
+	assert_eq(ref.choice, "c1")
+	assert_eq(ref.field, "text")
+	ref = NarrativeValidator.parse_where("quest 'q' > objective 'o'")
+	assert_eq(ref.category, "quest")
+	assert_eq(ref.objective, "o")
+	ref = NarrativeValidator.parse_where("quest 'q' > rewards")
+	assert_eq(ref.field, "rewards")
+	ref = NarrativeValidator.parse_where("character 'guard'")
+	assert_eq(ref.category, "character")
+	ref = NarrativeValidator.parse_where("variables[3]")
+	assert_eq(ref.category, "variable")
+	assert_eq(int(ref.index), 3)
+	assert_eq(NarrativeValidator.parse_where("database").category, "database")
+	assert_eq(NarrativeValidator.parse_where(""), {})
+	assert_eq(NarrativeValidator.parse_where("garbage segment"), {})
+
+
+func test_parse_where_roundtrip_on_real_issues() -> void:
+	# Every issue the validator emits on the (deliberately broken) standard
+	# fixture must parse back into a resolvable reference.
+	var db := DbFactory.standard()
+	var issues := _validate(db)
+	assert_true(issues.size() > 0)
+	for issue in issues:
+		var ref := NarrativeValidator.parse_where(str(issue.where))
+		assert_false(ref.is_empty(), "unparseable where: '%s'" % str(issue.where))
+		var resolved := NarrativeValidator.resolve_reference(db, ref)
+		assert_true(
+			resolved.resource != null or ref.has("index") or str(ref.get("category")) == "database",
+			"unresolvable where: '%s'" % str(issue.where)
+		)
+
+
+func test_resolve_reference_targets() -> void:
+	var db := DbFactory.standard()
+	var node_ref := NarrativeValidator.resolve_reference(db,
+		{"category": "dialogue", "id": "branch", "node": "q"})
+	assert_eq(node_ref.resource, db.get_dialogue("branch").get_node_by_id("q"))
+	assert_eq(node_ref.dialogue_id, "branch")
+	assert_eq(node_ref.node_id, "q")
+	var choice_ref := NarrativeValidator.resolve_reference(db,
+		{"category": "dialogue", "id": "branch", "node": "q", "choice": "stay"})
+	assert_eq(choice_ref.resource, db.get_dialogue("branch").get_node_by_id("q").choices[0])
+	assert_eq(choice_ref.node_id, "q", "graph focus still points at the owning node")
+	var objective_ref := NarrativeValidator.resolve_reference(db,
+		{"category": "quest", "id": "rats", "objective": "kill_rats"})
+	assert_eq(objective_ref.resource, db.get_quest("rats").objectives[0])
+	var missing := NarrativeValidator.resolve_reference(db, {"category": "dialogue", "id": "ghost"})
+	assert_null(missing.resource)
+	assert_eq(NarrativeValidator.resolve_reference(db, {}).resource, null)

@@ -83,6 +83,93 @@ static func format_issue(issue: Dictionary) -> String:
 	return "[%s] %s: %s  (%s)" % [tag, issue.code, issue.message, issue.where]
 
 
+## Parses a `where` string produced by this validator back into a structured
+## reference. The formats are internal to this class, so the editor panels can
+## rely on this instead of duplicating string knowledge.
+## Returns {} when unparseable, else a Dictionary with:
+##   category: "dialogue"|"quest"|"character"|"variable"|"database"|<list name>
+##   id: String           (entry id; "" for index-form entries)
+##   index: int           (only for "category[i]" null/empty-id entries)
+##   node/choice/objective: String (when present in the path)
+##   field: String        (trailing segment like "text"/"conditions"/"rewards")
+static func parse_where(where: String) -> Dictionary:
+	if where.strip_edges() == "":
+		return {}
+	if where == "database":
+		return {"category": "database"}
+	var ref := {}
+	var segment_regex := RegEx.create_from_string("^([a-zA-Z ]+) '(.*)'$")
+	var index_regex := RegEx.create_from_string("^([a-z]+)\\[(\\d+)\\]$")
+	for segment in where.split(" > "):
+		var named := segment_regex.search(segment)
+		if named != null:
+			var kind := named.get_string(1)
+			var id := named.get_string(2)
+			match kind:
+				"dialogue", "quest", "character", "variable":
+					ref["category"] = kind
+					ref["id"] = id
+				"node", "choice", "objective":
+					ref[kind] = id
+				_:
+					return {}
+			continue
+		var indexed := index_regex.search(segment)
+		if indexed != null:
+			ref["category"] = indexed.get_string(1).trim_suffix("s")
+			ref["id"] = ""
+			ref["index"] = int(indexed.get_string(2))
+			continue
+		# trailing plain segment: a field name like "text"/"conditions"/"rewards"
+		if ref.is_empty():
+			return {}
+		ref["field"] = segment
+	return ref if ref.has("category") else {}
+
+
+## Resolves a parse_where() reference against a database. Returns
+## { resource: Resource|null, dialogue_id: String, node_id: String } —
+## dialogue_id/node_id are filled when the reference points into a dialogue
+## graph (so editors can focus the graph view on it).
+static func resolve_reference(db: NarrativeDatabase, ref: Dictionary) -> Dictionary:
+	var result := {"resource": null, "dialogue_id": "", "node_id": ""}
+	if db == null or ref.is_empty():
+		return result
+	match str(ref.get("category", "")):
+		"dialogue":
+			var dialogue := db.get_dialogue(str(ref.get("id", "")))
+			if dialogue == null:
+				return result
+			result.resource = dialogue
+			result.dialogue_id = dialogue.id
+			var node := dialogue.get_node_by_id(str(ref.get("node", "")))
+			if node != null:
+				result.resource = node
+				result.node_id = node.id
+				if ref.has("choice"):
+					for choice in node.choices:
+						if choice != null and choice.id == str(ref.choice):
+							result.resource = choice
+							break
+		"quest":
+			var quest := db.get_quest(str(ref.get("id", "")))
+			if quest == null:
+				return result
+			result.resource = quest
+			if ref.has("objective"):
+				var objective := quest.get_objective_by_id(str(ref.objective))
+				if objective != null:
+					result.resource = objective
+		"character":
+			result.resource = db.get_character(str(ref.get("id", "")))
+		"variable":
+			for variable in db.variables:
+				if variable != null and variable.id == str(ref.get("id", "")):
+					result.resource = variable
+					break
+	return result
+
+
 # --- category-level checks ---
 
 

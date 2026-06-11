@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Save schema migration registry.
 ##

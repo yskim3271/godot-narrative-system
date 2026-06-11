@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeDialogueRunner
 extends RefCounted
 ## Drives a dialogue graph: node transitions, condition gating, actions,

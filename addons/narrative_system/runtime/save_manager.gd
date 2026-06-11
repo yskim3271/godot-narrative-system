@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeSaveManager
 extends RefCounted
 ## Versioned, human-readable JSON save/load for the whole narrative state

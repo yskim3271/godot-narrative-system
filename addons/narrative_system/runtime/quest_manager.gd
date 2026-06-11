@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeQuestManager
 extends RefCounted
 ## Quest lifecycle: inactive -> active -> completed | failed.

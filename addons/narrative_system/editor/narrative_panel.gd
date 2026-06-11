@@ -1,12 +1,17 @@
 @tool
 extends VBoxContainer
 ## Bottom-panel shell: database path bar + tabs (Database overview /
-## Validation) + CSV import/export. Built entirely in code; never touches
-## the runtime autoload (loads the database itself from the project setting).
+## Validation / Localization coverage / Preview) + CSV import/export.
+## Built entirely in code; never touches the runtime autoload (loads the
+## database itself from the project setting). The preview tab runs dialogues
+## in a sandboxed context; validation/localization rows double-click-focus
+## their resource (Inspector + main-screen graph via set_graph_editor).
 
 const SETTING_DATABASE_PATH := "narrative_system/database_path"
 const DatabaseEditor := preload("database_editor.gd")
 const ValidationPanel := preload("validation_panel.gd")
+const LocalizationPanel := preload("localization_panel.gd")
+const PreviewPanel := preload("preview_panel.gd")
 const CsvExporter := preload("../import_export/csv_exporter.gd")
 const CsvImporter := preload("../import_export/csv_importer.gd")
 const ScriptParser := preload("../import_export/dialogue_script_parser.gd")
@@ -17,7 +22,11 @@ var _status: Label
 var _tabs: TabContainer
 var _overview: Tree
 var _validation: VBoxContainer
+var _localization: VBoxContainer
+var _preview: VBoxContainer
 var _file_dialog: EditorFileDialog
+## Main-screen graph editor, injected by plugin.gd (null when headless).
+var _graph_editor: Control
 
 
 func _init() -> void:
@@ -60,7 +69,17 @@ func _init() -> void:
 
 	_validation = ValidationPanel.new()
 	_validation.name = "Validation"
+	_validation.set_focus_handler(focus_reference)
 	_tabs.add_child(_validation)
+
+	_localization = LocalizationPanel.new()
+	_localization.name = "Localization"
+	_localization.set_focus_handler(focus_reference)
+	_tabs.add_child(_localization)
+
+	_preview = PreviewPanel.new()
+	_preview.name = "Preview"
+	_tabs.add_child(_preview)
 
 
 func _ready() -> void:
@@ -99,6 +118,8 @@ func _load_database() -> void:
 	ProjectSettings.set_setting(SETTING_DATABASE_PATH, path)
 	ProjectSettings.save()
 	_overview.show_database(db)
+	_localization.show_database(db)
+	_preview.set_database(db)
 	_set_status("loaded %s (set as project database)" % path.get_file(), false)
 
 
@@ -149,7 +170,8 @@ func _import_csv() -> void:
 			result.keys, result.locales.size(),
 			" (saved)" if save_err == OK and _db.resource_path != "" else "",
 		], false)
-		_overview.show_database(_db))
+		_overview.show_database(_db)
+		_localization.show_database(_db))
 	dialog.popup_centered_ratio(0.5)
 
 
@@ -172,8 +194,43 @@ func _import_script() -> void:
 			report.imported.size(), report.replaced.size(),
 			" (saved)" if save_err == OK and _db.resource_path != "" else "",
 		], false)
-		_overview.show_database(_db))
+		_overview.show_database(_db)
+		_localization.show_database(_db)
+		_preview.set_database(_db))
 	dialog.popup_centered_ratio(0.5)
+
+
+## Injected by plugin.gd so validation/localization rows can jump to the
+## graph view. Tests may inject a graph editor instance directly.
+func set_graph_editor(graph_editor: Control) -> void:
+	_graph_editor = graph_editor
+
+
+## Focuses the resource behind a parse_where-shaped ref: opens it in the
+## Inspector and, for dialogue nodes, jumps the main-screen graph view to it.
+func focus_reference(ref: Dictionary) -> void:
+	if _db == null:
+		return
+	var resolved := NarrativeValidator.resolve_reference(_db, ref)
+	var resource: Resource = resolved.resource
+	if resource == null:
+		_set_status("cannot focus '%s' — resource not found" % str(ref.get("id", "?")), true)
+		return
+	if Engine.is_editor_hint():
+		EditorInterface.edit_resource(resource)
+	if str(resolved.dialogue_id) != "" and _graph_editor != null:
+		if Engine.is_editor_hint():
+			EditorInterface.set_main_screen_editor("Narrative")
+		_graph_editor.focus_node(str(resolved.dialogue_id), str(resolved.node_id))
+	_set_status("focused %s" % _describe_ref(ref), false)
+
+
+func _describe_ref(ref: Dictionary) -> String:
+	var text := "%s '%s'" % [str(ref.get("category", "?")), str(ref.get("id", "?"))]
+	for key in ["node", "choice", "objective"]:
+		if ref.has(key):
+			text += " > %s '%s'" % [key, str(ref[key])]
+	return text
 
 
 func _require_db() -> bool:

@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeContext
 extends RefCounted
 ## Dependency hub that owns and wires all runtime subsystems.

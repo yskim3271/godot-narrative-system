@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeState
 extends RefCounted
 ## Single source of truth for all mutable narrative runtime state:

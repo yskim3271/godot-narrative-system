@@ -1,3 +1,4 @@
+@tool
 extends RefCounted
 ## Evaluates Narrative DSL conditions, actions and sequencer lines.
 ##

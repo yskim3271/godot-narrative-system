@@ -131,6 +131,32 @@ func refresh_view() -> void:
 		open_dialogue(_dialogue.id)
 
 
+## Opens a dialogue and (when node_id is given) selects + centers that node.
+## Used by the bottom panel to jump from validation/localization rows to the
+## graph. Returns false when the dialogue (or the requested node) is unknown.
+func focus_node(dialogue_id: String, node_id := "") -> bool:
+	if _db == null:
+		return false
+	if _dialogue == null or _dialogue.id != dialogue_id:
+		if not open_dialogue(dialogue_id):
+			return false
+	if node_id == "":
+		return true
+	var gname: String = _id_to_gname.get(node_id, "")
+	if gname == "" or not _graph.has_node(NodePath(gname)):
+		_set_status("node '%s' is not in dialogue '%s'" % [node_id, dialogue_id], true)
+		return false
+	var gnode := _graph.get_node(NodePath(gname)) as GraphNode
+	for child in _graph.get_children():
+		if child is GraphNode:
+			child.selected = child == gnode
+	# Center the view on the node (scroll_offset is in zoomed pixels).
+	_graph.scroll_offset = gnode.position_offset * _graph.zoom \
+		- (_graph.size - gnode.size * _graph.zoom) * 0.5
+	_set_status("focused '%s' / '%s'" % [dialogue_id, node_id])
+	return true
+
+
 func current_dialogue() -> NarrativeDialogue:
 	return _dialogue
 

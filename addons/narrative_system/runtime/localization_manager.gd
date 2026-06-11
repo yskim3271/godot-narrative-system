@@ -1,3 +1,4 @@
+@tool
 class_name NarrativeLocalizationManager
 extends RefCounted
 ## Key-based text lookup with language fallback, independent from Godot's
