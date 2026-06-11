@@ -7,12 +7,19 @@ extends RefCounted
 ##    Assignments are grammatically impossible here, so `=` vs `==` typos
 ##    are parse errors. Chained comparisons are rejected with a hint.
 ##  - parse_actions(): statements (assignment | call) separated by ';'/newline.
-##  - parse_sequence(): like actions, but calls only (sequencer commands).
+##  - parse_sequence(): like actions, but calls only (sequencer commands),
+##    each optionally decorated with a schedule and/or a completion message:
+##      cmd(...) @ 1.5               run 1.5s after the run starts (parallel)
+##      cmd(...) @ message("ready")  run when message "ready" is broadcast
+##      cmd(...) -> "done"           broadcast "done" when the line finishes
 ##
 ## ASTs are nested plain Arrays (serializable, cheap):
 ##   ["lit", value] | ["var", name] | ["call", name, [args]]
 ##   ["not", e] | ["and", l, r] | ["or", l, r] | ["bin", op, l, r] | ["neg", e]
 ## Statements: ["assign", op, name, expr] | ["call", name, [args]]
+## Sequence decorations wrap a call statement (schedule outermost):
+##   ["timed", seconds, inner] | ["on_message", name, inner]
+##   | ["notify", name, inner]
 ##
 ## Every public method returns {ok: true, ...} or
 ## {ok: false, error: {message: String, pos: int}}.
@@ -89,7 +96,9 @@ func _parse_stmt(allow_assign: bool) -> Dictionary:
 		var call := _parse_call_args(name)
 		if not call.ok:
 			return call
-		return {"ok": true, "value": call.value}
+		if allow_assign:
+			return {"ok": true, "value": call.value}
+		return _parse_seq_decorations(call.value)
 	if _at_op_any(ASSIGN_OPS):
 		if not allow_assign:
 			return _error_here("assignments are not allowed here (sequencer lines are commands only)")
@@ -101,6 +110,65 @@ func _parse_stmt(allow_assign: bool) -> Dictionary:
 	if allow_assign:
 		return _error_here("expected '(' or an assignment operator after '%s'" % name)
 	return _error_here("expected '(' after command name '%s'" % name)
+
+
+## Optional sequencer-line decorations after a call: `@ <seconds>` or
+## `@ message("name")` (schedule), then `-> "name"` / `-> message("name")`
+## (completion broadcast). Wrap order: schedule outermost, notify inside.
+func _parse_seq_decorations(call_value: Array) -> Dictionary:
+	var schedule_kind := ""
+	var schedule_value: Variant = null
+	if _at_punct("@"):
+		_take()
+		if _at_type("number"):
+			schedule_kind = "timed"
+			schedule_value = float(_take().value)
+		elif _at_keyword("message"):
+			_take()
+			var msg := _parse_message_arg()
+			if not msg.ok:
+				return msg
+			schedule_kind = "on_message"
+			schedule_value = msg.value
+		else:
+			return _error_here("after '@' expected a time in seconds or message(\"name\")")
+	var node: Array = call_value
+	if _at_op("->"):
+		_take()
+		var target := ""
+		if _at_type("string"):
+			target = str(_take().value)
+		elif _at_keyword("message"):
+			_take()
+			var msg := _parse_message_arg()
+			if not msg.ok:
+				return msg
+			target = str(msg.value)
+		else:
+			return _error_here("after '->' expected \"name\" or message(\"name\")")
+		if target == "":
+			return _error_here("message name after '->' cannot be empty")
+		node = ["notify", target, node]
+	if schedule_kind == "timed":
+		node = ["timed", schedule_value, node]
+	elif schedule_kind == "on_message":
+		node = ["on_message", schedule_value, node]
+	return {"ok": true, "value": node}
+
+
+func _parse_message_arg() -> Dictionary:
+	if not _at_punct("("):
+		return _error_here("expected '(' after 'message'")
+	_take()
+	if not _at_type("string"):
+		return _error_here("message(...) takes one string literal")
+	var name := str(_take().value)
+	if not _at_punct(")"):
+		return _error_here("expected ')' to close message(...)")
+	_take()
+	if name == "":
+		return _error_here("message name cannot be empty")
+	return {"ok": true, "value": name}
 
 
 # --- expression levels (low to high precedence) ---

@@ -9,7 +9,7 @@
 
 ## M3 — 런타임 고도화
 
-1. 시퀀서 `@time` 병렬 스케줄링 + `->message` 동기화 (Unity DS 패리티), Camera3D/3D bark 지원
+1. ~~시퀀서 `@time` 병렬 스케줄링 + `->message`/`@message` 동기화 (Unity DS 패리티), `move_camera_3d`·3D `focus_camera`·3D bark~~ ✅
 2. 퀘스트: abandon/반복 퀘스트, objective 자동 완료 조건, 카테고리
 3. 대화 인터럽트 스택(컷인), 동시 bark 다중화 정책
 4. 저장 슬롯 메타데이터 API(스크린샷/플레이타임), `SaveServer` 제안 추이 반영

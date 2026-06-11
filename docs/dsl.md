@@ -15,15 +15,17 @@
 - `IDENT`: `[A-Za-z_][A-Za-z0-9_.]*` — 점은 이름 중간에만 (`player.gold` 허용, 멤버 접근 아님·통짜 이름임). 키워드 `and or not true false null` 제외
 - `NUMBER`: `123` (int) / `1.5` (float). 지수·선행 점 없음
 - `STRING`: `"..."` 또는 `'...'`, 이스케이프 `\\ \" \' \n \t`
-- 연산자: `== != <= >= < > + - * / % = += -=` (최대 일치: `==` 우선)
-- 구두점: `( ) , ;` · 주석: `#`~행끝 · `NEWLINE`: 액션/시퀀서 모드에서만 문장 구분자
+- 연산자: `== != <= >= < > + - * / % = += -= ->` (최대 일치: `==`/`->` 우선. `->`는 시퀀서 줄 장식 전용)
+- 구두점: `( ) , ; @` (`@`는 시퀀서 줄 장식 전용) · 주석: `#`~행끝 · `NEWLINE`: 액션/시퀀서 모드에서만 문장 구분자
 
 ## 3. 문법 (EBNF)
 
 ```ebnf
 condition   = [ expr ] , EOF ;
 actions     = [ stmt { separator stmt } ] , EOF ;   separator = ";" | NEWLINE ;
-stmt        = assignment | call ;                    (* 시퀀서 모드: call만 *)
+stmt        = assignment | call ;                    (* 시퀀서 모드: seq_line만 *)
+seq_line    = call [ "@" ( NUMBER | "message" "(" STRING ")" ) ]
+                   [ "->" ( STRING | "message" "(" STRING ")" ) ] ;  (* 시퀀서 전용, sequencer.md *)
 assignment  = IDENT ( "=" | "+=" | "-=" ) expr ;     (* 조건 모드에서 불법 → 파스 에러 *)
 call        = IDENT "(" [ expr { "," expr } ] ")" ;
 expr        = or_expr ;

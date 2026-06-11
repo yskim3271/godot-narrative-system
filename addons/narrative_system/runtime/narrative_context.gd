@@ -75,7 +75,7 @@ static func create(db: NarrativeDatabase, tree: SceneTree = null) -> NarrativeCo
 	ctx.save_manager.setup(db, ctx.state, ctx.localization, ctx.runner)
 
 	ctx.sequencer = NarrativeSequencer.new()
-	ctx.sequencer.setup(ctx.evaluator)
+	ctx.sequencer.setup(ctx.evaluator, tree)
 	ctx.runner.set_sequencer(ctx.sequencer)
 
 	ctx.builtins = BuiltinFunctions.new()

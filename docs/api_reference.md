@@ -18,6 +18,7 @@
 | `language_changed(locale)` | 언어 전환 |
 | `alert_requested(text)` / `bark_requested(character_id, text, attach_to)` | 알림/바크 (로컬라이즈 완료된 텍스트) |
 | `sequence_event(event_name, args)` | 시퀀서 `emit_signal` 명령 |
+| `sequencer_message(message)` | 시퀀서 메시지 브로드캐스트 (`-> "name"` 또는 `send_sequencer_message`) |
 
 ## 대화
 
@@ -65,6 +66,7 @@
 | `show_alert(text_or_key)` | AlertUI 큐로 표시 (키면 번역) |
 | `bark(character_id, text_or_key, attach_to := null)` | 말풍선 (기본 attach: 등록된 액터 노드) |
 | `play_sequence(source, label := "api")` | 시퀀서 명령 직접 실행 |
+| `send_sequencer_message(message)` | `@ message("name")` 대기 라인 해제 ([sequencer.md](sequencer.md)) |
 | `register_function(name, callable, override := false) -> bool` | DSL 함수 등록 |
 | `register_sequencer_command(name, callable, override := false) -> bool` | 시퀀서 명령 등록 |
 | `register_actor(id, node)` / `unregister_actor(id)` / `get_actor(id) -> Node` | 액터 레지스트리 |

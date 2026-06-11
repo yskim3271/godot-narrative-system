@@ -145,3 +145,122 @@ func test_bark_bubble_spawns_replaces_and_expires() -> void:
 	ctx.bark("ghost", "no target")  # unregistered actor: warn, no crash
 	bark_ui.queue_free()
 	await wait_frame()
+
+
+func test_timed_lines_run_in_parallel() -> void:
+	var rec: RefCounted = SignalRecorder.new()
+	rec.watch(ctx.sequencer, ["run_finished"])
+	ctx.sequencer.start_run("set_variable(\"gold\", 1) @ 0.15\nset_variable(\"met_guard\", true)", "t")
+	assert_eq(ctx.state.get_value("met_guard"), true, "sequential thread runs immediately")
+	assert_eq(ctx.state.get_value("gold"), 10, "@time line has not fired yet")
+	assert_true(ctx.sequencer.is_running(), "run stays alive until scheduled lines finish")
+	assert_eq(rec.count("run_finished"), 0)
+	await wait_seconds(0.35)
+	assert_eq(ctx.state.get_value("gold"), 1, "@time line fired in parallel")
+	assert_false(ctx.sequencer.is_running())
+	assert_eq(rec.count("run_finished"), 1, "run_finished waits for every job")
+
+
+func test_timed_zero_runs_at_start() -> void:
+	ctx.sequencer.start_run("set_variable(\"gold\", 3) @ 0", "t")
+	assert_eq(ctx.state.get_value("gold"), 3, "@0 runs synchronously at run start")
+	assert_false(ctx.sequencer.is_running())
+
+
+func test_notify_releases_message_waiter_synchronously() -> void:
+	var rec: RefCounted = SignalRecorder.new()
+	rec.watch(ctx.sequencer, ["run_finished", "sequencer_message"])
+	ctx.sequencer.start_run("set_variable(\"met_guard\", true) @ message(\"ready\")\nset_variable(\"gold\", 1) -> \"ready\"", "t")
+	assert_eq(ctx.state.get_value("gold"), 1)
+	assert_eq(ctx.state.get_value("met_guard"), true, "-> released the @message waiter")
+	assert_eq(rec.count("sequencer_message"), 1)
+	assert_eq(rec.args_of("sequencer_message"), ["ready"])
+	assert_eq(rec.count("run_finished"), 1)
+
+
+func test_send_message_releases_waiter_from_game_code() -> void:
+	ctx.sequencer.start_run("set_variable(\"gold\", 42) @ message(\"go\")", "t")
+	assert_eq(ctx.state.get_value("gold"), 10, "waiter is pending")
+	assert_true(ctx.sequencer.is_running())
+	ctx.sequencer.send_message("nope")
+	assert_eq(ctx.state.get_value("gold"), 10, "different message does not release it")
+	ctx.sequencer.send_message("go")
+	assert_eq(ctx.state.get_value("gold"), 42)
+	assert_false(ctx.sequencer.is_running())
+
+
+func test_cancellation_kills_scheduled_lines() -> void:
+	ctx.sequencer.start_run("set_variable(\"gold\", 99) @ 0.2\nset_variable(\"met_guard\", true) @ message(\"evt\")", "t")
+	ctx.sequencer.cancel_current()
+	ctx.sequencer.send_message("evt")
+	await wait_seconds(0.4)
+	assert_eq(ctx.state.get_value("gold"), 10, "cancelled @time line never fires")
+	assert_eq(ctx.state.get_value("met_guard"), false, "cancelled @message waiter never fires")
+	assert_false(ctx.sequencer.is_running())
+
+
+func test_notify_fires_even_for_skipped_command() -> void:
+	ctx.sequencer.start_run("definitely_missing(1) -> \"done\"\nset_variable(\"gold\", 7) @ message(\"done\")", "t")
+	assert_eq(ctx.state.get_value("gold"), 7, "skipped command still notifies, waiters cannot deadlock")
+
+
+func test_decoration_parse_error_no_crash() -> void:
+	ctx.sequencer.start_run("wait(1) @ oops", "t")
+	assert_false(ctx.sequencer.is_running())
+	assert_eq(ctx.state.get_value("gold"), 10)
+
+
+func test_camera_3d_commands() -> void:
+	var camera := Camera3D.new()
+	scene_tree.root.add_child(camera)
+	camera.make_current()
+	var npc3d := Node3D.new()
+	npc3d.name = "Guard3D"
+	scene_tree.root.add_child(npc3d)
+	npc3d.global_position = Vector3(10, 0, 0)
+	ctx.register_actor("guard3d", npc3d)
+	ctx.sequencer.start_run("move_camera_3d(1, 2, 3, 0)", "t")
+	assert_eq(camera.global_position, Vector3(1, 2, 3), "instant 3D camera move")
+	var position_before: Vector3 = camera.global_position
+	ctx.sequencer.start_run("focus_camera(\"guard3d\", 0)", "t")
+	assert_eq(camera.global_position, position_before, "3D focus rotates in place")
+	var forward := -camera.global_transform.basis.z
+	var direction := (npc3d.global_position - camera.global_position).normalized()
+	assert_true(forward.dot(direction) > 0.99, "camera aims at the 3D actor")
+	camera.queue_free()
+	npc3d.queue_free()
+	await wait_frame()
+
+
+func test_bark_bubble_3d_follows_and_expires() -> void:
+	var camera := Camera3D.new()
+	scene_tree.root.add_child(camera)
+	camera.make_current()
+	camera.global_position = Vector3(0, 0, 8)  # default orientation looks down -Z
+	var npc3d := Node3D.new()
+	npc3d.name = "Guard3D"
+	scene_tree.root.add_child(npc3d)
+	ctx.register_actor("guard3d", npc3d)
+	var bark_ui = load("res://addons/narrative_system/ui/bark_ui.tscn").instantiate()
+	bark_ui.lifetime = 0.2
+	scene_tree.root.add_child(bark_ui)
+	bark_ui.setup(ctx)
+
+	ctx.bark("guard3d", "3D!")
+	var bubbles: Array[Node] = bark_ui.find_children("*", "PanelContainer", true, false)
+	assert_eq(bubbles.size(), 1, "3D bubble is a screen-space child of the BarkUI")
+	assert_eq((bubbles[0].find_children("BarkLabel", "Label", true, false)[0] as Label).text, "3D!")
+	var bubble: Control = bubbles[0]
+	await wait_frame()
+	var position_before: Vector2 = bubble.position
+	npc3d.global_position = Vector3(3, 0, 0)
+	await wait_frame()
+	await wait_frame()
+	assert_ne(bubble.position, position_before, "bubble follows the projected actor position")
+
+	await wait_seconds(0.45)
+	assert_eq(bark_ui.find_children("*", "PanelContainer", true, false).size(), 0, "3D bubble expires")
+	bark_ui.queue_free()
+	camera.queue_free()
+	npc3d.queue_free()
+	await wait_frame()

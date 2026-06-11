@@ -10,7 +10,7 @@ extends RefCounted
 ## Types: "ident" | "number" | "string" | "op" | "punct" | "newline" | "eof"
 
 const KEYWORDS: PackedStringArray = ["and", "or", "not", "true", "false", "null"]
-const TWO_CHAR_OPS: PackedStringArray = ["==", "!=", "<=", ">=", "+=", "-="]
+const TWO_CHAR_OPS: PackedStringArray = ["==", "!=", "<=", ">=", "+=", "-=", "->"]
 const ONE_CHAR_OPS: PackedStringArray = ["<", ">", "+", "-", "*", "/", "%", "="]
 
 
@@ -84,7 +84,9 @@ static func tokenize(source: String, statement_mode: bool) -> Dictionary:
 			i += 1
 			continue
 
-		if c == "(" or c == ")" or c == "," or c == ";":
+		if c == "(" or c == ")" or c == "," or c == ";" or c == "@":
+			# '@' decorates sequencer lines (schedule); the parser rejects it
+			# anywhere else with a positioned error instead of a lexer error.
 			tokens.append({"type": "punct", "value": c, "pos": i})
 			i += 1
 			continue

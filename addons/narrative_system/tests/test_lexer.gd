@@ -67,7 +67,14 @@ func test_newlines_only_in_statement_mode() -> void:
 
 
 func test_illegal_character_reports_position() -> void:
-	var result := Lexer.tokenize("gold @ 1", false)
+	var result := Lexer.tokenize("gold $ 1", false)
 	assert_false(result.ok)
-	assert_contains(result.error.message, "unexpected character '@'")
+	assert_contains(result.error.message, "unexpected character '$'")
 	assert_eq(result.error.pos, 5)
+
+
+func test_sequencer_decoration_tokens() -> void:
+	# '@' is a punct and '->' an op (sequencer line decorations); the parser
+	# rejects them outside sequencer lines with positioned errors.
+	assert_eq(_tokens("wait(1) @ 2 -> 'go'", true),
+		["ident:wait", "punct:(", "number:1", "punct:)", "punct:@", "number:2", "op:->", "string:go", "eof:"])

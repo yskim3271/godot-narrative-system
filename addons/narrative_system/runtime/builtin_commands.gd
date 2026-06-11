@@ -21,6 +21,7 @@ func install(context) -> void:
 	sequencer.register_command("play_audio", cmd_play_audio)
 	sequencer.register_command("play_audio_wait", cmd_play_audio_wait)
 	sequencer.register_command("move_camera", cmd_move_camera)
+	sequencer.register_command("move_camera_3d", cmd_move_camera_3d)
 	sequencer.register_command("focus_camera", cmd_focus_camera)
 	sequencer.register_command("emit_signal", cmd_emit_signal)
 	sequencer.register_command("call_method", cmd_call_method)
@@ -88,15 +89,30 @@ func cmd_move_camera(args: Array) -> void:
 	await _tween_camera(camera, Vector2(_num(args, 0, 0.0), _num(args, 1, 0.0)), _num(args, 2, 0.5))
 
 
-func cmd_focus_camera(args: Array) -> void:
-	var camera := _camera_2d()
+func cmd_move_camera_3d(args: Array) -> void:
+	var camera := _camera_3d()
 	if camera == null:
 		return
+	var target := Vector3(_num(args, 0, 0.0), _num(args, 1, 0.0), _num(args, 2, 0.0))
+	await _tween_camera_3d(camera, target, _num(args, 3, 0.5))
+
+
+## Dispatches on the actor's space: Node2D moves the active Camera2D to the
+## actor, Node3D rotates the active Camera3D in place to face it.
+func cmd_focus_camera(args: Array) -> void:
 	var actor := _actor(args, 0)
 	if actor == null:
 		return
+	if actor is Node3D:
+		var camera_3d := _camera_3d()
+		if camera_3d != null:
+			await _aim_camera_3d(camera_3d, (actor as Node3D).global_position, _num(args, 1, 0.5))
+		return
 	if not actor is Node2D:
-		push_warning("Narrative sequencer: focus_camera — actor '%s' is not a Node2D" % _str(args, 0))
+		push_warning("Narrative sequencer: focus_camera — actor '%s' is neither a Node2D nor a Node3D" % _str(args, 0))
+		return
+	var camera := _camera_2d()
+	if camera == null:
 		return
 	await _tween_camera(camera, (actor as Node2D).global_position, _num(args, 1, 0.5))
 
@@ -259,4 +275,45 @@ func _tween_camera(camera: Camera2D, target: Vector2, duration: float) -> void:
 		return
 	var tween: Tween = ctx.scene_tree.create_tween()
 	tween.tween_property(camera, "global_position", target, duration)
+	await tween.finished
+
+
+func _camera_3d() -> Camera3D:
+	var ctx = _ctx()
+	if ctx == null or ctx.scene_tree == null:
+		return null
+	var camera: Camera3D = (ctx.scene_tree.root as Viewport).get_camera_3d()
+	if camera == null:
+		push_warning("Narrative sequencer: no active Camera3D")
+	return camera
+
+
+func _tween_camera_3d(camera: Camera3D, target: Vector3, duration: float) -> void:
+	var ctx = _ctx()
+	if ctx == null or ctx.scene_tree == null:
+		return
+	if duration <= 0.0:
+		camera.global_position = target
+		return
+	var tween: Tween = ctx.scene_tree.create_tween()
+	tween.tween_property(camera, "global_position", target, duration)
+	await tween.finished
+
+
+## Rotates the camera in place to face `target` (position preserved).
+func _aim_camera_3d(camera: Camera3D, target: Vector3, duration: float) -> void:
+	var ctx = _ctx()
+	if ctx == null or ctx.scene_tree == null:
+		return
+	if camera.global_position.is_equal_approx(target):
+		return  # nothing to aim at
+	var direction := (target - camera.global_position).normalized()
+	# looking_at degenerates when the view direction is parallel to up.
+	var up := Vector3.UP if absf(direction.dot(Vector3.UP)) < 0.999 else Vector3.FORWARD
+	var aimed := camera.global_transform.looking_at(target, up)
+	if duration <= 0.0:
+		camera.global_transform = aimed
+		return
+	var tween: Tween = ctx.scene_tree.create_tween()
+	tween.tween_property(camera, "global_transform", aimed, duration)
 	await tween.finished

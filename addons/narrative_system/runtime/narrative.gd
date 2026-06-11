@@ -22,6 +22,7 @@ signal language_changed(locale: String)
 signal alert_requested(text: String)
 signal bark_requested(character_id: String, text: String, attach_to: Node)
 signal sequence_event(event_name: String, args: Array)
+signal sequencer_message(message: String)
 
 const SETTING_DATABASE_PATH := "narrative_system/database_path"
 
@@ -191,6 +192,13 @@ func play_sequence(source: String, label := "api") -> void:
 		context.sequencer.start_run(source, label)
 
 
+## Broadcasts a sequencer message: releases `cmd(...) @ message("name")`
+## lines waiting in the current sequence run (see docs/sequencer.md).
+func send_sequencer_message(message: String) -> void:
+	if _ok():
+		context.sequencer.send_message(message)
+
+
 # --- localization ---
 
 
@@ -329,5 +337,6 @@ func _wire(ctx: NarrativeContext) -> void:
 	ctx.alert_requested.connect(func(text: String) -> void: alert_requested.emit(text))
 	ctx.bark_requested.connect(func(c: String, t: String, n: Node) -> void: bark_requested.emit(c, t, n))
 	ctx.sequencer.sequence_event.connect(func(event_name: String, args: Array) -> void: sequence_event.emit(event_name, args))
+	ctx.sequencer.sequencer_message.connect(func(message: String) -> void: sequencer_message.emit(message))
 	if ctx.quests != null:
 		ctx.quests.quest_updated.connect(func(id: String) -> void: quest_updated.emit(id))

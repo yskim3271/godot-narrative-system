@@ -24,9 +24,9 @@ const BUILTIN_FUNCTIONS: PackedStringArray = [
 ## Kept in sync with runtime/builtin_commands.gd.
 const BUILTIN_COMMANDS: PackedStringArray = [
 	"wait", "play_animation", "play_animation_wait", "play_audio",
-	"play_audio_wait", "move_camera", "focus_camera", "emit_signal",
-	"call_method", "show_actor", "hide_actor", "set_expression",
-	"set_variable", "start_quest", "complete_quest",
+	"play_audio_wait", "move_camera", "move_camera_3d", "focus_camera",
+	"emit_signal", "call_method", "show_actor", "hide_actor",
+	"set_expression", "set_variable", "start_quest", "complete_quest",
 ]
 const QUEST_ID_FUNCTIONS: PackedStringArray = [
 	"quest_state", "is_quest_active", "is_quest_completed", "is_quest_failed",
@@ -278,8 +278,11 @@ func _check_dsl(source: String, mode: String, where: String) -> void:
 			if not _declared_vars.has(str(stmt[2])):
 				_warning("undeclared_variable", "assignment to undeclared variable '%s' (creates a transient variable)" % str(stmt[2]), where)
 			_walk_expr(stmt[3], where)
-		else:  # call
-			_check_call(stmt, where, mode == "sequence")
+		else:  # call, possibly inside sequencer decorations (@time/@message/->)
+			var inner: Array = stmt
+			while str(inner[0]) in ["timed", "on_message", "notify"]:
+				inner = inner[2]
+			_check_call(inner, where, mode == "sequence")
 
 
 func _walk_expr(ast: Array, where: String) -> void:
