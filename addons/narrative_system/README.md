@@ -8,9 +8,9 @@ the position "Dialogue System for Unity" holds, natively in Godot.
 - **Engine**: Godot 4.4+ (developed and tested on 4.6.3)
 - **Language**: pure GDScript, zero external dependencies
 - **License**: MIT ([LICENSE](LICENSE))
-- **Repository / full documentation (Korean)**: see the asset's repository
-  link on its Asset Library page — per-feature guides live in the repo's
-  `docs/` folder; five runnable demos in `examples/`.
+- **Repository**: <https://github.com/yskim3271/godot-narrative-system> —
+  screenshots, five runnable demos in `examples/`, and per-feature guides in
+  `docs/` (Korean; the repo README and all code comments are English).
 
 ## Features
 

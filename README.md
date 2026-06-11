@@ -1,100 +1,189 @@
 # Narrative System for Godot
 
-**Godot 4.x용 올인원 내러티브 시스템 애드온** — 분기 대화, 선택지, 조건/변수, 퀘스트(로그·트래커 UI 포함), 저장/불러오기, 로컬라이징(ko/en), Bark/Alert, 컷신 시퀀서, 검증 도구를 하나의 패키지로 제공합니다. Unity의 "Dialogue System for Unity"가 차지하는 포지션을 Godot에서 목표로 합니다.
+[![Godot 4.4+](https://img.shields.io/badge/Godot-4.4%2B-478cbf?logo=godotengine&logoColor=white)](https://godotengine.org)
+[![Version](https://img.shields.io/github/v/tag/yskim3271/godot-narrative-system?label=version&color=blue)](https://github.com/yskim3271/godot-narrative-system/tags)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](addons/narrative_system/LICENSE)
 
-- **요구 버전**: Godot 4.4+ (4.6.3에서 개발·테스트)
-- **언어**: GDScript (외부 의존성 없음)
-- **라이선스**: MIT
-- **English**: see the package README — [addons/narrative_system/README.md](addons/narrative_system/README.md)
+**All-in-one narrative system addon for Godot 4** — branching dialogue with
+choices and conditions, quests (with log/tracker UI), save/load, localization,
+barks, alerts, a cutscene sequencer, and authoring/validation tools in a
+single package. Aims at the position "Dialogue System for Unity" holds,
+natively in Godot. Pure GDScript, zero external dependencies, MIT.
 
-## 왜 이 애드온인가
+![Dialogue graph editor](docs/screenshots/graph_editor.png)
+*The "Narrative" main-screen tab: dialogue graph with inline editing
+(speaker, text, node renames with link retargeting, choice text/targets),
+full undo/redo, validation, and per-choice output ports.*
 
-| | Dialogic 2 | Dialogue Manager | 퀘스트 애드온들 | **Narrative System** |
-|---|---|---|---|---|
-| 분기 대화 + 조건/변수 | ✓ | ✓ | ✗ | ✓ |
-| 퀘스트 + 로그/트래커 UI | ✗ | ✗ | ✓ (대화 비연동) | ✓ (**대화 액션 직결**) |
-| 통합 저장/불러오기 | 부분 | ✗ (무상태 설계) | 부분 | ✓ (버전드 JSON + 마이그레이션) |
-| Bark / Alert | ✗ | ✗ | ✗ | ✓ |
-| 컷신 시퀀서 | 부분 | ✗ | ✗ | ✓ (확장 가능 명령) |
-| 데이터 검증 도구 | ✗ | ✗ | ✗ | ✓ (에디터 패널 + CLI) |
+## Why this addon
 
-## 핵심 특징
+Most Godot narrative addons solve **one** slice well — dialogue *or* quests
+*or* saving. This one ships the whole loop and wires the pieces together:
 
-- **Resource 네이티브**: 모든 데이터가 `.tres` — Inspector에서 편집, VCS 친화적
-- **eval 없는 안전한 DSL**: 조건/액션/시퀀서 명령은 자체 파서로 해석 (임의 코드 실행 불가, 게임 함수는 화이트리스트 등록)
-- **signal 우선 느슨한 결합**: 게임 코드는 `Narrative` 파사드의 시그널만 구독 — 모든 기본 UI는 교체 가능한 레퍼런스 구현
-- **headless 테스트 가능**: UI 없이 전체 로직 실행 — 자체 테스트 212개 + 해피패스 무에러 게이트 + 데이터 검증 CLI
-- **본 노드 추적(SimStatus)**: `has_seen()`으로 첫만남/재방문 분기
-- **사람이 읽는 저장 파일**: 순수 JSON, 원자적 쓰기, 손상 격리, 스키마 마이그레이션
+| | Typical dialogue addons | Typical quest addons | **Narrative System** |
+|---|---|---|---|
+| Branching dialogue + conditions/variables | ✓ | ✗ | ✓ |
+| Quests + log/tracker UI | ✗ | ✓ (not dialogue-aware) | ✓ — **start/progress/complete quests directly from dialogue actions** |
+| Integrated save/load | partial | partial | ✓ versioned JSON + schema migrations |
+| Barks / alerts | ✗ | ✗ | ✓ 2D & 3D speech bubbles, alert queue |
+| Cutscene sequencer | partial | ✗ | ✓ parallel scheduling, extensible commands |
+| Static validation tooling | ✗ | ✗ | ✓ editor panel + headless CLI |
 
-## 빠른 시작
+Design principles:
+
+- **Resource-native** — every piece of data is a `.tres` you edit in the
+  Inspector; VCS-friendly, no opaque databases.
+- **A safe DSL instead of `eval`** — conditions, actions and sequencer lines
+  go through a hand-written lexer/parser/evaluator. No arbitrary code
+  execution; game functions are whitelist-registered.
+- **Signal-first loose coupling** — game code subscribes to the `Narrative`
+  facade's signals. Every bundled UI is a replaceable reference
+  implementation built on the same public API.
+- **Headless-testable** — the entire runtime runs without UI; the repo ships
+  252 tests, a happy-path zero-error gate and a database validation CLI.
+- **Human-readable saves** — plain JSON, atomic writes with backup rotation,
+  corruption quarantine, schema migrations.
+
+## Features
+
+- **Branching dialogue**: speaker/text nodes, conditional skips, choices
+  (hidden or grayed-out when locked), re-entrant signal-safe runner,
+  `has_seen()` first-meeting variations.
+- **Graph editor**: a "Narrative" main-screen tab — node canvas with inline
+  editing, node id renames that retarget every link, full undo/redo,
+  auto-layout, choice auto-numbering.
+- **Bottom panel tooling**: database overview, validation with
+  **double-click-to-focus** (jumps the graph to the offending node and opens
+  it in the Inspector), a per-locale **translation coverage report**, and an
+  in-editor **dialogue preview** (sandboxed playback with live variable/quest
+  state — authoring resources are never touched).
+- **Text authoring format (.ndlg)**: writer-friendly line-based scripts with
+  atomic import and round-trip export, plus inline `[var=x]` markup with
+  editor shortcuts and BBCode pass-through.
+- **Quests**: prerequisites, objectives with clamped progress and
+  **auto-complete conditions**, reward actions, **abandon & repeatable
+  quests** with completion tracking, categories, quest log + tracker UI.
+- **Sequencer (cutscenes)**: runs alongside dialogue lines, cancellable by
+  input. Sequential lines plus Unity-DS-style parallel scheduling —
+  `cmd() @ 1.5`, `cmd() @ message("ready")`, `cmd() -> "done"`. 16 built-in
+  commands (animation, audio, 2D/3D camera, actors), custom command
+  registration.
+- **Save/load**: versioned plain-JSON saves, atomic writes, corruption
+  isolation, migrations, dialogue-position resume (presentation-only replay).
+- **Localization**: layered resolution (current language → inline text →
+  fallback), convention keys, CSV round-trip, instant runtime language
+  switching.
+- **Barks & alerts**: speech bubbles above 2D and 3D actors, alert queue.
+- **Validator**: static analysis of the whole database (broken links,
+  unknown ids, DSL parse errors, unreachable nodes, missing localization
+  keys, …) as an editor panel and a CI-friendly CLI.
+
+## More screenshots
+
+*In-editor dialogue preview — sandboxed playback with choices, quest/alert
+transcript and a live state view:*
+
+![In-editor dialogue preview](docs/screenshots/preview_panel.png)
+
+| Numbered & condition-locked choices, quest tracker | Quest log with abandon + objectives |
+|---|---|
+| ![Dialogue choices in the demo](docs/screenshots/demo_dialogue_choices.png) | ![Quest log](docs/screenshots/demo_quest_log.png) |
+
+![Quest start with alert, tracker and sequencer cutscene](docs/screenshots/demo_quest_start.png)
+*Accepting a quest from dialogue: alert queue, tracker HUD update and a
+sequencer cutscene (expression change, camera pan) — all driven by data.*
+
+## Installation
+
+1. Copy `addons/narrative_system/` into your project (installing from the
+   [Godot Asset Library](https://godotengine.org/asset-library/) does this
+   for you).
+2. Enable **Project Settings → Plugins → Narrative System** — this registers
+   the `Narrative` autoload and project settings.
+3. Point the `narrative_system/database_path` project setting at your
+   `NarrativeDatabase` resource (the bottom **Narrative** panel's *Load*
+   button does this automatically).
+
+The runtime also works without the editor plugin: register
+`runtime/narrative.gd` as an autoload named `Narrative` manually.
+
+## Quick start
 
 ```gdscript
-# 1) addons/narrative_system 폴더를 프로젝트에 복사하고 플러그인을 활성화
-#    (프로젝트 설정 → 플러그인 → Narrative System 체크 → autoload 자동 등록)
-# 2) 프로젝트 설정 narrative_system/database_path 에 데이터베이스 .tres 지정
-# 3) 씬에 ui/dialogue_box.tscn, ui/choice_list.tscn 인스턴스 추가
-# 4) 대화 시작:
+# Scene: add ui/dialogue_box.tscn and ui/choice_list.tscn instances, then:
 Narrative.start_dialogue("guard_talk")
 
-# 시그널 구독:
 Narrative.dialogue_ended.connect(func(id): player.can_move = true)
-Narrative.quest_updated.connect(func(id): print("quest: ", id))
+Narrative.quest_updated.connect(func(id): print("quest changed: ", id))
 ```
 
-자세한 설치·첫 대화 만들기: **[docs/getting_started.md](docs/getting_started.md)**
+Everything goes through the `Narrative` facade — signals for presentation,
+methods for control (`advance()`, `select_choice()`, `start_quest()`,
+`save_game()`, `set_language()`, `bark()`, `play_sequence()`, …).
 
-## 데모 (5종)
+## Demos (5 runnable projects)
 
-프로젝트를 Godot로 열고 ▶ 실행 — 기본 실행은 [integrated_demo](examples/integrated_demo/README.md)(전 기능 통합)입니다. 주제별 데모는 해당 씬을 열어 실행하세요:
+Clone this repo, open it in Godot and press ▶ — the main scene is the
+integrated demo. Each demo has its own README:
 
-| 데모 | 주제 |
+| Demo | Shows |
 |---|---|
-| [basic_dialogue_demo](examples/basic_dialogue_demo/README.md) | 최소 구성 — 코드 DB + 선형 대화 |
-| [branching_choice_demo](examples/branching_choice_demo/README.md) | 선택지/조건/비활성 + **.ndlg 텍스트 저작** |
-| [quest_demo](examples/quest_demo/README.md) | 퀘스트 수주→진행→완료 사이클 + 로그/트래커 |
-| [localization_cutscene_demo](examples/localization_cutscene_demo/README.md) | 한/영 런타임 전환 + 시퀀서 컷신 + bark |
-| [integrated_demo](examples/integrated_demo/README.md) | 전 기능 통합 (저장/불러오기 포함) |
+| [basic_dialogue_demo](examples/basic_dialogue_demo/README.md) | Minimal setup — code-built database, linear dialogue |
+| [branching_choice_demo](examples/branching_choice_demo/README.md) | Choices, conditions, disabled options — authored in **.ndlg** |
+| [quest_demo](examples/quest_demo/README.md) | Full quest cycle: accept → progress → complete, log/tracker |
+| [localization_cutscene_demo](examples/localization_cutscene_demo/README.md) | Runtime ko/en switching, sequencer cutscene, barks |
+| [integrated_demo](examples/integrated_demo/README.md) | Everything together, including save/load mid-choice |
 
-## 문서
+## Documentation
 
-| 문서 | 내용 |
+The English [package README](addons/narrative_system/README.md) covers the
+essentials, and all source code is commented in English. The full per-feature
+guides under [docs/](docs/) are currently written in **Korean** (translation
+is on the roadmap) — machine translation works well on them, and the API
+surface itself is documented in code:
+
+| Document (Korean) | Contents |
 |---|---|
-| [getting_started.md](docs/getting_started.md) | 설치(플러그인/수동 autoload), 10분 만에 첫 대화 |
-| [dialogue_authoring.md](docs/dialogue_authoring.md) | Inspector 저작 워크플로, 분기 패턴, 함정 |
-| [graph_editor.md](docs/graph_editor.md) | **노드 그래프 에디터** (메인 스크린 Narrative 탭, undo/redo) |
-| [text_script.md](docs/text_script.md) | **.ndlg 텍스트 대화 저작 포맷** (임포트/익스포트) |
-| [dsl.md](docs/dsl.md) | 조건/액션 미니 언어 문법·의미론 |
-| [quest_system.md](docs/quest_system.md) | 퀘스트 상태·objective·보상·UI |
-| [save_load.md](docs/save_load.md) · [save_format.md](docs/save_format.md) | 사용법 · JSON 스키마/마이그레이션 |
-| [localization.md](docs/localization.md) | 키 규칙, CSV 왕복, 언어 전환, 폰트 |
-| [sequencer.md](docs/sequencer.md) | 내장 명령 레퍼런스, 커스텀 명령 |
-| [extending.md](docs/extending.md) | 게임 함수/명령 등록, 커스텀 UI |
-| [api_reference.md](docs/api_reference.md) | 파사드 API·시그널 전체 |
-| [architecture.md](docs/architecture.md) · [signals.md](docs/signals.md) | 내부 설계 |
-| [security_notes.md](docs/security_notes.md) | .tres 신뢰 경계, 저장 파일 안전성 |
-| [known_limitations.md](docs/known_limitations.md) · [roadmap.md](docs/roadmap.md) | 한계와 다음 단계 |
-| [asset_library_submission.md](docs/asset_library_submission.md) | Asset Library 패키징·제출 체크리스트 |
-| [test_report.md](docs/test_report.md) | 테스트 현황과 실행 방법 |
+| [getting_started.md](docs/getting_started.md) | Install paths, your first dialogue in 10 minutes |
+| [dialogue_authoring.md](docs/dialogue_authoring.md) | Authoring workflow, branching patterns, pitfalls |
+| [graph_editor.md](docs/graph_editor.md) | Node graph editor (main-screen tab, undo/redo) |
+| [text_script.md](docs/text_script.md) | The .ndlg text authoring format |
+| [dsl.md](docs/dsl.md) | Condition/action mini-language grammar & semantics |
+| [quest_system.md](docs/quest_system.md) | Quest states, objectives, rewards, UI |
+| [save_load.md](docs/save_load.md) · [save_format.md](docs/save_format.md) | Usage · JSON schema & migrations |
+| [localization.md](docs/localization.md) | Key conventions, CSV round-trip, language switching |
+| [sequencer.md](docs/sequencer.md) | Built-in command reference, custom commands |
+| [extending.md](docs/extending.md) | Registering game functions/commands, custom UIs |
+| [api_reference.md](docs/api_reference.md) | Complete facade API & signals |
+| [architecture.md](docs/architecture.md) · [signals.md](docs/signals.md) | Internal design |
+| [known_limitations.md](docs/known_limitations.md) · [roadmap.md](docs/roadmap.md) | Limits and what's next |
 
-## 테스트 실행
+## Running the tests
 
 ```powershell
-.\scripts\run_tests.ps1          # import → 유닛 212개 → 해피패스 순수성 → DB 검증 → 데모 부팅
+.\scripts\run_tests.ps1            # import -> 252 unit/integration tests ->
+                                   # happy-path purity -> DB validation -> demo boots
 .\scripts\run_tests.ps1 -Filter lexer
 ```
 
-## 저장소 구조
+The suite needs a Godot 4.4+ console binary (`-GodotExe` to point elsewhere).
+Current status: [docs/test_report.md](docs/test_report.md).
+
+## Repository layout
 
 ```
-addons/narrative_system/   # 애드온 본체 (이 폴더만 복사하면 설치 끝)
-  runtime/                 #   파사드·러너·퀘스트·저장·로컬라이징·시퀀서 (+dsl/)
-  resources/               #   데이터 모델 (NarrativeDatabase 등 10종)
-  ui/                      #   레퍼런스 UI 7종 (.tscn/.gd)
-  editor/                  #   에디터 하단 패널 (@tool)
-  validation/              #   정적 검증기 + CLI (에디터 비의존)
-  import_export/           #   로컬라이징 CSV
-  tests/                   #   자체 headless 테스트 하니스 + 212 테스트 (배포 패키지에선 제외)
-examples/integrated_demo/  # 통합 데모 (▶ 실행)
-docs/                      # 문서 · 설계 · Phase별 구현 보고서
+addons/narrative_system/   # the addon itself (copying this folder = installing)
+  runtime/                 #   facade, dialogue runner, quests, saves, l10n, sequencer (+dsl/)
+  resources/               #   data model (NarrativeDatabase and 9 more)
+  ui/                      #   7 reference UIs (.tscn/.gd)
+  editor/                  #   graph editor + bottom panel (@tool)
+  validation/              #   static validator + CLI (editor-independent)
+  import_export/           #   localization CSV + .ndlg parser
+  tests/                   #   headless test harness + 252 tests (excluded from the package)
+examples/                  # 5 demo projects (run from this repo)
+docs/                      # guides, design notes, per-phase reports (Korean)
 ```
+
+## License
+
+[MIT](addons/narrative_system/LICENSE) © Yunsik Kim

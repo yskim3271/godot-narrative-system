@@ -48,7 +48,7 @@ git archive v1.2.0 -o package_check.zip
 | Download Commit | `04074dfe217eac7103fd7a1a65d3696570a9f279` (= `git rev-parse v1.2.0`) |
 | Icon URL | `https://raw.githubusercontent.com/yskim3271/godot-narrative-system/main/icon.png` (icon.svg에서 256×256 PNG 생성 — `scripts/make_icon.gd`) |
 | Description | 영문 — `addons/narrative_system/README.md`의 첫 단락 + Features 요약 사용 |
-| Preview images | 그래프 에디터·통합 데모·퀘스트 로그 스크린샷 권장 (선택) |
+| Preview images | docs/screenshots/ 캡처 완료 — raw URL: `https://raw.githubusercontent.com/yskim3271/godot-narrative-system/main/docs/screenshots/` + `graph_editor.png` / `preview_panel.png` / `demo_dialogue_choices.png` / `demo_quest_log.png` / `demo_quest_start.png` |
 
 ## 심사 통과 요건 점검 (제출 전 최종)
 
