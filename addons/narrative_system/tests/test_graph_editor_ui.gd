@@ -99,6 +99,30 @@ func test_end_node_move_persists_positions() -> void:
 	assert_eq(GraphModel.get_position(db.get_dialogue("branch").get_node_by_id("rich")), Vector2(777, 333))
 
 
+func test_fills_container_parent_so_graph_gets_height() -> void:
+	# The editor main screen is a Container that ignores anchors and sizes
+	# children by size flags. A fresh editor must EXPAND_FILL, otherwise it
+	# collapses to its minimum height inside the container and the GraphEdit
+	# gets ZERO height — every node is then spawned into an invisible canvas.
+	# Regression: shipped 1.0.0 relied on FULL_RECT anchors alone, so the
+	# graph editor showed an empty canvas in the actual editor main screen.
+	var fresh: Control = GraphEditorScript.new()
+	assert_eq(fresh.size_flags_horizontal, Control.SIZE_EXPAND_FILL, "must fill container width")
+	assert_eq(fresh.size_flags_vertical, Control.SIZE_EXPAND_FILL, "must fill container height")
+	var box := VBoxContainer.new()
+	box.size = Vector2(800, 600)
+	scene_tree.root.add_child(box)
+	box.add_child(fresh)
+	fresh.set_database(db)
+	fresh.open_dialogue("branch")
+	await wait_frame()
+	await wait_frame()
+	assert_true(fresh.get_graph_edit().size.y > 100.0,
+		"GraphEdit must receive real height inside a Container (got %s)" % fresh.get_graph_edit().size)
+	box.queue_free()
+	await wait_frame()
+
+
 func test_switching_dialogues_rebuilds() -> void:
 	assert_true(editor.open_dialogue("linear"))
 	assert_eq(_graph_nodes().size(), 3)

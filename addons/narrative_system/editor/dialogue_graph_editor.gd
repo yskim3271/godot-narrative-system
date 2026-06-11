@@ -16,7 +16,8 @@ extends Control
 ## Field editing happens in the Inspector: selecting a graph node opens its
 ## NarrativeDialogueNode there. Structural changes made in the Inspector
 ## (e.g. added choices) appear after Refresh / re-opening the tab.
-## NOTE: no undo/redo yet (see docs/graph_editor.md).
+## Structural edits (add/delete/link/move/set-start) are undoable through the
+## injected EditorUndoRedoManager (see set_undo_redo and docs/graph_editor.md).
 
 const GraphModel := preload("dialogue_graph_model.gd")
 const SETTING_DATABASE_PATH := "narrative_system/database_path"
@@ -49,6 +50,13 @@ var _new_dialog_edit: LineEdit
 func _init() -> void:
 	name = "NarrativeGraphEditor"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The editor main screen is a Container (VBoxContainer): it sizes children
+	# by size flags and IGNORES anchors. Without EXPAND_FILL the control would
+	# collapse to its minimum height there, leaving the GraphEdit zero-height
+	# and every node invisible. The anchors above still cover non-container
+	# parents (tests, standalone embedding).
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_build_ui()
 
 
