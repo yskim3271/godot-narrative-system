@@ -39,6 +39,12 @@ func get_variable(variable_id: String) -> NarrativeVariable:
 	return _lookup("variables", variables, variable_id)
 
 
+## Editor/import tooling: call after REPLACING entries in place (the lazy
+## id indexes only auto-invalidate when an array's size changes).
+func invalidate_indexes() -> void:
+	_index_counts = {}
+
+
 ## Settings, falling back to defaults when none are assigned in the database.
 func get_settings() -> NarrativeSettings:
 	if settings != null:

@@ -9,6 +9,7 @@ const DatabaseEditor := preload("database_editor.gd")
 const ValidationPanel := preload("validation_panel.gd")
 const CsvExporter := preload("../import_export/csv_exporter.gd")
 const CsvImporter := preload("../import_export/csv_importer.gd")
+const ScriptParser := preload("../import_export/dialogue_script_parser.gd")
 
 var _db: NarrativeDatabase
 var _path_edit: LineEdit
@@ -42,6 +43,7 @@ func _init() -> void:
 	_add_button(toolbar, "Validate", _validate)
 	_add_button(toolbar, "Export CSV", _export_csv)
 	_add_button(toolbar, "Import CSV", _import_csv)
+	_add_button(toolbar, "Import Script", _import_script)
 
 	_status = Label.new()
 	_status.text = ""
@@ -145,6 +147,29 @@ func _import_csv() -> void:
 			save_err = ResourceSaver.save(_db)
 		_set_status("imported %d key(s), %d locale(s)%s" % [
 			result.keys, result.locales.size(),
+			" (saved)" if save_err == OK and _db.resource_path != "" else "",
+		], false)
+		_overview.show_database(_db))
+	dialog.popup_centered_ratio(0.5)
+
+
+func _import_script() -> void:
+	if not _require_db():
+		return
+	var dialog := _ensure_file_dialog()
+	dialog.file_mode = EditorFileDialog.FILE_MODE_OPEN_FILE
+	dialog.filters = PackedStringArray(["*.ndlg, *.txt ; Narrative Dialogue Script"])
+	_reconnect(dialog.file_selected, func(path: String) -> void:
+		var report := ScriptParser.import_file(_db, path)
+		if not report.ok:
+			var first: Dictionary = report.errors[0] if not report.errors.is_empty() else {"line": 0, "message": "unknown"}
+			_set_status("script import failed — line %d: %s (%d error(s), database untouched)" % [int(first.line), str(first.message), report.errors.size()], true)
+			return
+		var save_err := OK
+		if _db.resource_path != "" and not _db.resource_path.contains("::"):
+			save_err = ResourceSaver.save(_db)
+		_set_status("script imported: %d new, %d replaced%s" % [
+			report.imported.size(), report.replaced.size(),
 			" (saved)" if save_err == OK and _db.resource_path != "" else "",
 		], false)
 		_overview.show_database(_db))
